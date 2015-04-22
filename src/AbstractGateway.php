@@ -11,6 +11,7 @@
 namespace Aura\SqlMapper_Bundle;
 
 use Aura\Sql\ConnectionLocator;
+use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlMapper_Bundle\Query\Select;
 use Aura\SqlMapper_Bundle\Query\Insert;
@@ -72,6 +73,11 @@ abstract class AbstractGateway implements GatewayInterface
     protected $write_connection;
 
     /**
+     * @var bool
+     */
+    protected $batch_fail = false;
+
+    /**
      *
      * Constructor.
      *
@@ -100,6 +106,13 @@ abstract class AbstractGateway implements GatewayInterface
      *
      */
     abstract public function getTable();
+
+    /**
+     * Returns the information required to make joins, or null.
+     *
+     * @return array The array of join information.
+     */
+     abstract public function getJoins();
 
     /**
      *
@@ -217,6 +230,11 @@ abstract class AbstractGateway implements GatewayInterface
     {
         $select = $this->query_factory->newSelect($this->getReadConnection());
         $select->from($this->getTable());
+        if ($this->getJoins() != null) {
+            foreach ($this->getJoins() as $table => $params) {
+                $select->join($params);
+            }
+        }
         $select->cols($this->getTableCols($cols));
         return $select;
     }
@@ -232,22 +250,31 @@ abstract class AbstractGateway implements GatewayInterface
      */
     public function insert(array $row)
     {
-        $row = $this->filter->forInsert($row);
-        $insert = $this->newInsert($row);
-        if (! $insert->perform()) {
-            return false;
+        $row  = $this->filter->forInsert($row);
+        $rows = $this->parseRows($row);
+        $rootInsert = false;
+        foreach ($rows as $table => $cols) {
+            $insert = $this->newInsert($cols, $table);
+            if ($table === $this->getTable()) {
+                $rootInsert = $insert;
+            }
+            if (! $insert->perform()) {
+                return false;
+            }
         }
-        return $this->setAutoPrimary($insert, $row);
+        return $this->setAutoPrimary($rootInsert, $row);
     }
 
-    protected function newInsert(array $row)
+    protected function newInsert(array $row, $table = null)
     {
+        if ($table === null) {
+            $table = $this->getTable();
+        }
         if ($this->isAutoPrimary()) {
             unset($row[$this->getPrimaryCol()]);
         }
-
         $insert = $this->query_factory->newInsert($this->getWriteConnection());
-        $insert->into($this->getTable());
+        $insert->into($table);
         $insert->cols(array_keys($row));
         $insert->bindValues($row);
 
@@ -349,12 +376,12 @@ abstract class AbstractGateway implements GatewayInterface
         if (! $cols) {
             $cols = array('*');
         }
-
         $list = [];
         foreach ($cols as $col) {
-            $list[] = $this->getTableCol($col);
+            if (! preg_match("/^.+\..+$/", $col)) {
+                $list[] = $this->getTableCol($col);
+            }
         }
-
         return $list;
     }
 
@@ -370,5 +397,19 @@ abstract class AbstractGateway implements GatewayInterface
     protected function getTableCol($col)
     {
         return $this->getTable() . '.' . $col;
+    }
+
+    protected function parseRows(array $rows)
+    {
+        $output = array();
+        foreach ($rows as $col => $val) {
+            $match = explode('.', $col);
+            if (count($match) === 1){
+                $output[$this->getTable()][$match[0]] = $val;
+            } else {
+                $output[$match[0]][$match[1]] = $val;
+            }
+        }
+        return $output;
     }
 }
