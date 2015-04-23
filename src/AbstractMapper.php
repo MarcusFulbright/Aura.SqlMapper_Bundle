@@ -94,7 +94,7 @@ abstract class AbstractMapper implements MapperInterface
      *
      * Returns the name of the identity field on the object.
      *
-     * @return array
+     * @return string
      *
      */
     public function getIdentityField()
