@@ -12,9 +12,4 @@ class FakeGateway extends AbstractGateway
     {
         return 'id';
     }
-
-    public function getJoins()
-    {
-        return array();
-    }
 }

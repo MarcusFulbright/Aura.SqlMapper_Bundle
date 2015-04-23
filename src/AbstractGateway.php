@@ -108,13 +108,6 @@ abstract class AbstractGateway implements GatewayInterface
     abstract public function getTable();
 
     /**
-     * Returns the information required to make joins, or null.
-     *
-     * @return array The array of join information.
-     */
-     abstract public function getJoins();
-
-    /**
      *
      * Returns the primary column name on the table.
      *
@@ -122,6 +115,20 @@ abstract class AbstractGateway implements GatewayInterface
      *
      */
     abstract public function getPrimaryCol();
+
+    /**
+     *
+     * Returns the information required to make joins, or null.
+     *
+     * If joins are needed, override this function to return an array of table names.
+     *
+     * @return array The array of join information.
+     *
+     */
+     public function getJoins()
+     {
+         return null;
+     }
 
     /**
      *
@@ -230,6 +237,7 @@ abstract class AbstractGateway implements GatewayInterface
     {
         $select = $this->query_factory->newSelect($this->getReadConnection());
         $select->from($this->getTable());
+
         if ($this->getJoins() != null) {
             foreach ($this->getJoins() as $table => $params) {
                 $select->join($params);
@@ -243,6 +251,9 @@ abstract class AbstractGateway implements GatewayInterface
      *
      * Inserts a row array into the gateway table using a write connection.
      *
+     * In the event that the row contains data that is mapped to multiple tables, one insert per table will get
+     * performed.
+     *
      * @param array $row The row array to insert.
      *
      * @return mixed
@@ -250,26 +261,22 @@ abstract class AbstractGateway implements GatewayInterface
      */
     public function insert(array $row)
     {
-        $row  = $this->filter->forInsert($row);
-        $rows = $this->parseRows($row);
-        $rootInsert = false;
+        $row    = $this->filter->forInsert($row);
+        $rows   = $this->parseRows($row);
+        $output = array();
+
         foreach ($rows as $table => $cols) {
             $insert = $this->newInsert($cols, $table);
-            if ($table === $this->getTable()) {
-                $rootInsert = $insert;
-            }
             if (! $insert->perform()) {
                 return false;
             }
+            $output[] = $this->setAutoPrimary($insert, $cols, $table);
         }
-        return $this->setAutoPrimary($rootInsert, $row);
+        return $output;
     }
 
-    protected function newInsert(array $row, $table = null)
+    protected function newInsert(array $row, $table)
     {
-        if ($table === null) {
-            $table = $this->getTable();
-        }
         if ($this->isAutoPrimary()) {
             unset($row[$this->getPrimaryCol()]);
         }
@@ -277,11 +284,10 @@ abstract class AbstractGateway implements GatewayInterface
         $insert->into($table);
         $insert->cols(array_keys($row));
         $insert->bindValues($row);
-
         return $insert;
     }
 
-    protected function setAutoPrimary(Insert $insert, array $row)
+    protected function setAutoPrimary(Insert $insert, array $row, $table)
     {
         if (! $this->isAutoPrimary()) {
             return $row;
@@ -308,6 +314,8 @@ abstract class AbstractGateway implements GatewayInterface
      *
      * Updates a row in the table using a write connection.
      *
+     * In the event that the
+     *
      * @param array $row The row array to update.
      *
      * @return bool True if the update succeeded, false if not.  (This is
@@ -317,9 +325,12 @@ abstract class AbstractGateway implements GatewayInterface
     public function update(array $row)
     {
         $row = $this->filter->forUpdate($row);
-        $update = $this->newUpdate($row);
-        if (! $update->perform()) {
-            return false;
+        $rows = $this->parseRows($row);
+        foreach ($rows as $table => $cols) {
+            $update = $this->newUpdate($row);
+            if (! $update->perform()) {
+                return false;
+            }
         }
         return $row;
     }
@@ -399,16 +410,29 @@ abstract class AbstractGateway implements GatewayInterface
         return $this->getTable() . '.' . $col;
     }
 
+    /**
+     *
+     * Parses a row into an multi-dimensional associative array indexed by table.
+     *
+     * @param array $rows The row array to parse.
+     *
+     * @return array Parsed array.
+     *
+     */
     protected function parseRows(array $rows)
     {
         $output = array();
+        $root_table = $this->getTable();
         foreach ($rows as $col => $val) {
             $match = explode('.', $col);
             if (count($match) === 1){
-                $output[$this->getTable()][$match[0]] = $val;
+                $col = $match[0];
+                $table = $root_table;
             } else {
-                $output[$match[0]][$match[1]] = $val;
+                $table = $match[0];
+                $col   = $match[1];
             }
+            $output[$table][$col] = $val;
         }
         return $output;
     }
