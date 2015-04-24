@@ -77,7 +77,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * @return mixed
      */
-    abstract function getColsAsFields();
+    abstract public function getColsAsFields();
 
     /**
      *
@@ -270,48 +270,46 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
     {
         $this->filter->forInsert($object);
 
-        $data = $this->getRowData($object);
-        $row = $this->gateway->insert($data);
-        if (! $row) {
+        $results = $this->persistObjectData($object);
+        if (! $results) {
             return false;
-        }
-
-        if ($this->gateway->isAutoPrimary()) {
-            $this->setIdentityValue(
-                $object,
-                $this->gateway->getPrimaryVal($row)
-            );
         }
 
         return true;
     }
-    protected function getRowData($object, $initial_data = null)
+
+    /**
+     *
+     * Returns row data ready for the gateway to use.
+     *
+     * @param mixed $object The object that represents the current state
+     *
+     * @param mixed $initial_data Represents the previous state of $object
+     *
+     * @return array An array, indexed by friendly name, with an array of rows as values.
+     *
+     */
+    protected function persistObjectData($object, $initial_data = null)
     {
         if ($initial_data) {
             return $this->getRowDataChanges($object, $initial_data);
         }
-        $this->traverseColsMap($this->getColsAsFields(), $object, $data);
+        $context = $this->createTraversalContext($this->getColsAsFields(), $object);
+        return $this->traverseAndPersistObject($context);
     }
 
-
     /**
-     * array(
-     *    'propertyName' => 'friendlyName.Column',
-     *    'propertyName' => array(
-     *         'propertyName' => 'friendlyName.Column'
-     *     )
-     * );
      *
-     * array(
-     *    'friendlyName.column' => 'val',
-     *    'friendlyName' => array(
-     *       0 => array(
-     *            'friendlyName.column' => 'val'
-     *       )
-     *    )
-     * )
+     * Returns an array of properties that exist in the current context of the provided map.
+     *
+     * @param mixed $object The object we care about.
+     *
+     * @param array $map The PropertyName->FieldName map of the current context.
+     *
+     * @return array An array of ReflectionProperties.
+     *
      */
-    protected function traverseColsMap(array $map, $target, array &$data)
+    protected function getMappedProperties($object, $map)
     {
         if (is_array($target)) {
             $target = (object) $target;
@@ -319,19 +317,185 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
         $reflection = new \ReflectionClass($target);
         $properties = $reflection->getProperties();
 
-        /** @var \ReflectionProperty $property */
+        $output = array();
         foreach ($properties as $property) {
             $property->setAccessible(true);
-            $col = $map[$property->getName()];
-            $value = $property->getValue($target);
-            if (is_array($col)) {
+            if (isset($map[$property->name])) {
+                $output[$property->name] = $property;
+            }
+            
+        }
+        return $output;
+    }
 
+    /**
+     *
+     * For each property in the provided object, organize it by friendly name, and then add it to the
+     * output array.
+     *
+     * @param array $map The map for this context of the object.
+     *
+     * @param mixed $target The object to traverse.
+     *
+     * @param array &$data The output array.
+     *
+     * @return array An array, indexed by friendly name, with an array of rows as values.\
+     *
+     * @todo  separate some of these responsibilities, because this is a monster.
+     *
+     */
+    
+    /**
+     * RESPONSIBILITIES
+     * 1) Gather Properties
+     * 2) Object Property Iteration
+     * 3) Group Values by Friendly Name
+     * 4) Determine what needs to be persisted
+     * 5) Update object if necessary
+     */
+    protected function traverseAndPersistObject(stdClass $context, $persist = false)
+    {
+        $by_friendly_name = array();
 
-                $this->traverseColsMap($col, $value, $data);
+        /** @var \ReflectionProperty $property */
+        foreach ($context->properties as $property) {
+            $col = $context->map[$property->name];
+            $value = $property->getValue($context->target);
+            $friendly_name = $this->getFriendlyName($col);
+
+            if ($friendly_name === false) {
+
+                $arrayContext = $this->createTraversalContext($col, $val, $data);
+                if ($this->traverseAndPersistArray($arrayContext) === false) {
+                    return false;
+                }
+
             } else {
-                $data[$col] = $value;
+                $by_friendly_name[$friendly_name][$col] = $value;
             }
         }
+
+        if ($persist === true) {
+            foreach ($by_friendly_name as $friendlyName => $row) {
+                $result = $this->gateway->persist($row);
+                $col_to_property_map = $this->safeArrayFlip($context->map);
+
+                if ($result === false) {
+                    return false;
+                }
+
+                $property_name = $col_to_property_map[$result['col']];
+                $context->properties[$property_name]->setValue($context->target, $result['val']);
+            }
+        } else {
+            // DELETE
+        }
+        return true;
+    }
+
+    /**
+     *
+     * Creates the context object we'll need to pass between traversal methods.
+     *
+     * @param array $map The map representing this stage of traversal.
+     *
+     * @param mixed $target The object that the map corresponds to.
+     *
+     * @param array &$output The cumulative data array.
+     *
+     * @return stdClass The context object.
+     *
+     * @todo Consider adding the by_friendly_name array to this Class.
+     *
+     */
+    protected function createTraversalContext(array $map, $target, array &$output = array())
+    {
+        $context = new stdClass();
+        $context->target = $target;
+        $context->properties = $this->getMappedProperties($target);
+        $context->output = &$output;
+        return $context;
+    }
+
+    /**
+     *
+     * Returns an array where values are keys and keys are values. Removes any member that cannot be used this way.
+     *
+     * @param array $array The array to flip.
+     *
+     * @return array The flipped array.
+     *
+     */
+    protected function safeArrayFlip(array $array) {
+        $output = array();
+        foreach ($array as $key => $value) {
+            if (is_string($value) || is_int($value)) {
+                $output[$value] = $key;
+            }
+        }
+        return $output;
+    }
+
+    /**
+     *
+     * For each member of an array, traverse as an object.
+     * 
+     * @param array $map The propertyname -> fieldname map for these objects.
+     *
+     * @param array $target The array to traverse.
+     *
+     * @param array &$data The output dataset.
+     *
+     * @return array An array, indexed by friendly name, with an array of rows as values.
+     *
+     */
+    protected function traverseAndPersistArray(array $map, array $target, array &$data)
+    {
+        foreach ($target as $member) {
+            if ($this->traverseAndPersistObject($map, $member, $data) === false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     *
+     * Merges a data array split by friendly name into the output array.
+     *
+     * @param array $context Represents data for this context indexed by friendlyname.
+     *
+     * @param array &$data An array, indexed by friendly name, with an array of rows as values.
+     *
+     */
+    protected function addToDataArray(array $context, array &$data)
+    {
+        foreach ($context as $friendly_name => $properties) {
+            $data[$friendly_name][] = $properties;
+        }
         return $data;
+    }
+
+    /**
+     * 
+     * Returns a declared friendlyname (or '__root' if none is declare) for any given column name. If the
+     * column is not parseable, return false.
+     *
+     * @param mixed $column The column to check for friendly name.
+     * 
+     * @return mixed The parsed friendlyname or false if not parseable.
+     * 
+     */
+    protected function getFriendlyName($column)
+    {
+        if (! is_string($column)) {
+            return false;
+        }
+
+        $pieces = explode('.', $column);
+        if (count($pieces) > 1) {
+            return $pieces[0];
+        }
+        return '__root';
     }
 }
