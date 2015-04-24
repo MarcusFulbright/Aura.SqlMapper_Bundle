@@ -1,9 +1,14 @@
 <?php
+
 namespace Aura\SqlMapper_Bundle;
+use Aura\SqlMapper_Bundle\Query\Select;
 
 /**
- * Interface CompoundGatewayInterface
+ *
+ * Interface for a compound gateway.
+ *
  * @package Aura\SqlMapper_Bundle
+ *
  */
 interface CompoundGatewayInterface 
 {
@@ -34,10 +39,11 @@ interface CompoundGatewayInterface
      * @param mixed $val The value(s) to match against; this can be an array
      * of values.
      *
-     * @return Select
+     * @param array $cols
      *
+     * @return Select
      */
-    public function selectBy($col, $val, array $cols = []);
+    public function selectBy($col, $val, array $cols = array());
 
     /**
      *
@@ -86,4 +92,68 @@ interface CompoundGatewayInterface
      *
      */
     public function delete(array $row);
+
+
+    /**
+     *
+     * Returns an array of join information indexed by a friendly name.
+     *
+     * @return array
+     */
+    public function getJoins();
+
+    /**
+     *
+     * Executes a select statement and returns the first result.
+     *
+     * @param Select $select statement to execute
+     *
+     * @return array
+     *
+     */
+    public function fetchRow(Select $select);
+
+    /**
+     *
+     * Executes a select statement with the given $vals in the where clause and returns
+     * the first result.
+     *
+     * @param string $col The column to use for matching.
+     *
+     * @param mixed $val The value(s) to match against; this can be an array
+     * of values.
+     *
+     * @param array $cols Select these columns from the table; when empty,
+     * selects all gateway columns.
+     *
+     * @return mixed
+     */
+    public function fetchRowBy($col, $val, array $cols = array());
+
+    /**
+     *
+     * Executes a select statement and returns all results.
+     *
+     * @param Select $select Statement to execute.
+     *
+     * @return mixed
+     */
+    public function fetchRows(Select $select);
+
+    /**
+     *
+     * Executes a select statement with the given $vals in the where clause and returns
+     * all results.
+     *
+     * @param string $col The column to use for matching.
+     *
+     * @param mixed $val The value(s) to match against; this can be an array
+     * of values.
+     *
+     * @param array $cols Select these columns from the table; when empty,
+     * selects all gateway columns.
+     *
+     * @return mixed
+     */
+    public function fetchRowsBy($col, $val, array $cols = array());
 }

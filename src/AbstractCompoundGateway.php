@@ -1,5 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
+
 use Aura\Sql\ConnectionLocator;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 
@@ -10,13 +11,28 @@ use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
  */
 abstract class AbstractCompoundGateway implements CompoundGatewayInterface
 {
+    /**
+     *
+     * @var GatewayInterface Gateway for the root table.
+     *
+     */
     protected $rootGateway;
 
+    /**
+     *
+     * @var array All of the gateways for leaf tables index by a friendly name.
+     *
+     */
     protected $leafGateways;
 
+    /**
+     *
+     * @var array All gateways, root uses the friendly name __root.
+     *
+     */
     protected $allGateways;
 
-        /**
+    /**
      *
      * A database connection locator.
      *
@@ -82,7 +98,7 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         ConnectedQueryFactory $query_factory,
         FilterInterface $filter
     ) {
-       // validate $leafGateway
+       // validate $leafGateway?
         $this->rootGateway = $rootGateway;
         $this->leafGateways = $leafGateways;
         $this->connection_locator = $connection_locator;
@@ -96,31 +112,11 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
     }
 
     /**
-     * @return string
-     */
-    public function getRootTable()
-    {
-        return $this->rootGateway->getTable();
-    }
-
-
-    /**
-     * @return string
-     */
-    abstract function getRootPrimaryCol();
-
-    /**
      *
-     * Does the database set the primary key value on insert, e.g. by using
-     * auto-increment?
+     * An array containing all join information indexed by friendly name.
      *
-     * @return bool
-     *
-     */
-    abstract public function isRootAutoPrimary();
-
-    /**
      * @return array
+     *
      */
     abstract public function getJoins();
 
@@ -168,10 +164,19 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         return $this->write_connection;
     }
 
+    /**
+     *
+     * Creates a statement to select the given cols with the appropriate joins.
+     *
+     * @param array $cols Columns to select
+     *
+     * @return Query\Select
+     *
+     */
     public function select(array $cols)
     {
         $select = $this->query_factory->newSelect($this->getReadConnection());
-        $select->from($this->getRootTable());
+        $select->from($this->rootGateway->getTable());
         foreach ($this->getJoins() as $table => $join) {
             $select->join($join);
         }
@@ -181,9 +186,9 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
 
     /**
      *
-     * Updates a row in the table using a write connection.
+     * Updates all of the required tables based on the given rows.
      *
-     * @param array $row The row array to update.
+     * @param array $row The data array to update.
      *
      * @return bool True if the update succeeded, false if not.  (This is
      * determined by checking the number of rows affected by the query.)
@@ -202,6 +207,16 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         return $row;
     }
 
+    /**
+     *
+     * Deletes the specified data from the appropriate tables.
+     *
+     * @param array $row Data to delete
+     *
+     * @return bool True if the delete succeeded, false if not.  (This is
+     * determined by checking the number of rows affected by the query.)
+     *
+     */
     public function delete(array $row)
     {
         $parsed = $this->parseRow($row);
@@ -214,6 +229,16 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         return $row;
     }
 
+    /**
+     *
+     * Inserts data into the appropriate tables.
+     *
+     * @param array $row Data to insert
+     *
+     * @return bool True if the delete succeeded, false if not.  (This is
+     * determined by checking the number of rows affected by the query.)
+     *
+     */
     public function insert(array $row)
     {
         $parsed = $this->parseRow($row);
@@ -252,12 +277,23 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         return $list;
     }
 
+    /**
+     *
+     * Replaces FriendlyNames with the appropriate table names.
+     *
+     * @param string $col columns to operate on
+     *
+     * @param bool $is_select for select statements the friendly name needs to be the alias
+     *
+     * @return string
+     *
+     */
     protected function getTableCol($col, $is_select = false)
     {
         $pieces = explode('.', $col);
         if (count($pieces) === 1) {
             $col = $pieces[0];
-            $table = $this->getRootTable();
+            $table = $this->rootGateway->getTable();
         } else {
             $friendlyName = $pieces[0];
             unset($pieces[0]);
@@ -270,6 +306,16 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
         return $table . '.' . $col;
     }
 
+    /**
+     *
+     * Adds an alias using the friendly name unless its already aliased.
+     *
+     * @param string $col Col to alias
+     *
+     * @param string $alias the Alias to add
+     *
+     * @return string
+     */
     protected function addAliasToCol($col, $alias)
     {
         if (! preg_match("/\sas\s/", $col)) {
