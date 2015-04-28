@@ -77,7 +77,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * @return mixed
      */
-    abstract public function getColsAsFields();
+    abstract public function getColsFields();
 
     /**
      *
@@ -233,7 +233,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      */
     public function select()
     {
-        $cols = $this->getColsAsFields();
+        $cols = $this->getColsFields();
         return $this->gateway->select($cols);
     }
 
@@ -253,7 +253,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      */
     public function selectBy($col, $val)
     {
-        $cols = $this->getColsAsFields();
+        $cols = $this->getColsFields();
         return $this->gateway->selectBy($col, $val, $cols);
     }
 
@@ -269,13 +269,24 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
     public function insert($object)
     {
         $this->filter->forInsert($object);
-
         $results = $this->persistObjectData($object);
-        if (! $results) {
-            return false;
-        }
+        return (bool) $results;
+    }
 
-        return true;
+    /**
+     *
+     * Inserts an individual object through the gateway.
+     *
+     * @param object $object The individual object to insert.
+     *
+     * @return bool
+     *
+     */
+    public function update($object, $initial_data = null)
+    {
+        $this->filter->forUpdate($object);
+        $results = $this->persistObjectData($object, $initial_data);
+        return (bool) $results;
     }
 
     /**
@@ -291,11 +302,85 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      */
     protected function persistObjectData($object, $initial_data = null)
     {
-        if ($initial_data) {
-            return $this->getRowDataChanges($object, $initial_data);
+        $context = $this->createTraversalContext($this->getColsFields(), $object);
+        return $this->traverseObject($context, array($this, 'persist'));
+    }
+
+    /**
+     *
+     * Given a row and a context, persist that row in the Gateway.
+     *
+     * On success, this will update the primary field on $context->target.
+     *
+     * @param array $row The row to persist.
+     *
+     * @param string $friendly_name The friendly name of the gateway.
+     *
+     * @param stdClass $context The context of the current traversal operation.
+     *
+     * @return boolean Whether or not the persist operation was successful.
+     *
+     */
+    protected function persist($row, $friendly_name, stdClass $context)
+    {
+        $result = $this->gateway->persist($row);
+        if ($result) {
+            $property_name = $context->inverseMap[$result['primary_column']];
+            $context->properties[$property_name]->setValue($context->target, $result['primary_value']);
         }
-        $context = $this->createTraversalContext($this->getColsAsFields(), $object);
-        return $this->traverseAndPersistObject($context);
+        return (bool) $result;
+    }
+
+    /**
+     *
+     * Inserts an individual object through the gateway.
+     *
+     * @param object $object The individual object to delete.
+     *
+     * @return bool
+     *
+     */
+    public function delete($object)
+    {
+        $context = $this->createTraversalContext($this->getColsFields(), $object);
+        return (bool) $this->traverseObject($context, array($this->gateway, 'delete'));
+    }
+
+    /**
+     *
+     * Creates the Traversal Context object we'll need to pass between traversal methods.
+     *
+     * This object outputs this {
+     *
+     *     @property $context->target object The object we're concerned with traversing.
+     *
+     *     @property $context->properties array An array of \ReflectionProperties.
+     *
+     *     @property $context->map array The property-to-column map.
+     *
+     *     @property $context->inverseMap array The column-to-property map.
+     *
+     *     @property $context->callback \callable A function to call on individual rows.
+     * }
+     *
+     * @param array $map The map representing this stage of traversal.
+     *
+     * @param mixed $target The object that the map corresponds to.
+     *
+     * @param array &$output The cumulative data array.
+     *
+     * @return stdClass The context object.
+     *
+     */
+    protected function createTraversalContext(array $map, $target, callable $callback, array &$output = array())
+    {
+        $context = new stdClass();
+        $context->target = $target;
+        $context->properties = $this->getMappedProperties($target);
+        $context->callback = $callback;
+        $context->map = $map;
+        $context->inverseMap = $this->safeArrayFlip($context->map);
+        return $context;
     }
 
     /**
@@ -323,15 +408,13 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
             if (isset($map[$property->name])) {
                 $output[$property->name] = $property;
             }
-            
         }
         return $output;
     }
 
     /**
      *
-     * For each property in the provided object, organize it by friendly name, and then add it to the
-     * output array.
+     * Traverse a given context.
      *
      * @param array $map The map for this context of the object.
      *
@@ -341,80 +424,102 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * @return array An array, indexed by friendly name, with an array of rows as values.\
      *
-     * @todo  separate some of these responsibilities, because this is a monster.
-     *
      */
-    
-    /**
-     * RESPONSIBILITIES
-     * 1) Gather Properties
-     * 2) Object Property Iteration
-     * 3) Group Values by Friendly Name
-     * 4) Determine what needs to be persisted
-     * 5) Update object if necessary
-     */
-    protected function traverseAndPersistObject(stdClass $context, $persist = false)
+    protected function traverseObject(stdClass $context)
     {
         $by_friendly_name = array();
 
         /** @var \ReflectionProperty $property */
         foreach ($context->properties as $property) {
-            $col = $context->map[$property->name];
-            $value = $property->getValue($context->target);
-            $friendly_name = $this->getFriendlyName($col);
-
-            if ($friendly_name === false) {
-
-                $arrayContext = $this->createTraversalContext($col, $val, $data);
-                if ($this->traverseAndPersistArray($arrayContext) === false) {
-                    return false;
-                }
-
-            } else {
-                $by_friendly_name[$friendly_name][$col] = $value;
+            if (! $this->handleProperty($property, $context, $by_friendly_name)) {
+                return false;
             }
         }
 
-        if ($persist === true) {
-            foreach ($by_friendly_name as $friendlyName => $row) {
-                $result = $this->gateway->persist($row);
-                $col_to_property_map = $this->safeArrayFlip($context->map);
+        return $this->walkTraversed($by_friendly_name, $context);
+    }
 
-                if ($result === false) {
-                    return false;
-                }
-
-                $property_name = $col_to_property_map[$result['col']];
-                $context->properties[$property_name]->setValue($context->target, $result['val']);
+    /**
+     *
+     * For a given property (and it's traversal context), by friendly name and add to the output array.
+     *
+     * If we come across a nested array in the map, then traverse that array.
+     *
+     * @param \ReflectionProperty $property The property we want to add to the output array.
+     *
+     * @param stdClass $context The Traversal Context object.
+     *
+     * @param  array $output The cumulative output array, indexed by friendly name.
+     *
+     * @return bool Whether or not we were successful in handling this property.
+     *
+     */
+    protected function handleProperty(\ReflectionProperty $property, \stdClass $context, array &$output = array())
+    {
+        $col = $context->map[$property->name];
+        $friendly_name = $this->getFriendlyName($col);
+        if ($friendly_name === false) {
+            if ($this->traverseArray($val, $col, $context->callback) === false) {
+                return false;
             }
         } else {
-            // DELETE
+            $value = $property->getValue($context->target);
+            $output[$friendly_name][$col] = $value;
         }
         return true;
     }
 
     /**
      *
-     * Creates the context object we'll need to pass between traversal methods.
+     * For each member of an array, traverse as an object. This method will stop
+     * processing members at the first failure.
      *
-     * @param array $map The map representing this stage of traversal.
+     * @param array $map The propertyname -> fieldname map for these objects.
      *
-     * @param mixed $target The object that the map corresponds to.
+     * @param array $array The array to traverse.
      *
-     * @param array &$output The cumulative data array.
+     * @param array &$callback The current callback method.
      *
-     * @return stdClass The context object.
-     *
-     * @todo Consider adding the by_friendly_name array to this Class.
+     * @return bool Whether all of these members were processed successfuly.
      *
      */
-    protected function createTraversalContext(array $map, $target, array &$output = array())
+    protected function traverseArray(array $map, array $array, callable $callback)
     {
-        $context = new stdClass();
-        $context->target = $target;
-        $context->properties = $this->getMappedProperties($target);
-        $context->output = &$output;
-        return $context;
+        foreach ($context->target as $member) {
+            $context = $this->createTraversalContext($map, $array, $callback);
+            if ($this->traverseObject($context) === false) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     *
+     * Walks the output of handleProperty (the by_friendly_name array) and
+     * executes the callback for each row extracted. This method will stop
+     * processing rows at the first failure.
+     *
+     * @param array $by_friendly_name An array of rows, indexed by friendly name.
+     *
+     * @param stdClass $context The traversal context object for the object these rows came from.
+     *
+     * @return bool Whether this was
+     *
+     */
+    protected function walkTraversed(array $by_friendly_name, $context)
+    {
+        $success = true;
+        array_walk(
+            $by_friendly_name,
+            function($row, $friendly_name, $context) use (&$success) {
+                if ($success === true) {
+                    $success = $context->callback($row, $friendly_name, $context);
+                }
+            },
+            $context
+        );
+        return $success;
     }
 
     /**
@@ -426,7 +531,8 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      * @return array The flipped array.
      *
      */
-    protected function safeArrayFlip(array $array) {
+    protected function safeArrayFlip(array $array)
+    {
         $output = array();
         foreach ($array as $key => $value) {
             if (is_string($value) || is_int($value)) {
@@ -434,29 +540,6 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
             }
         }
         return $output;
-    }
-
-    /**
-     *
-     * For each member of an array, traverse as an object.
-     * 
-     * @param array $map The propertyname -> fieldname map for these objects.
-     *
-     * @param array $target The array to traverse.
-     *
-     * @param array &$data The output dataset.
-     *
-     * @return array An array, indexed by friendly name, with an array of rows as values.
-     *
-     */
-    protected function traverseAndPersistArray(array $map, array $target, array &$data)
-    {
-        foreach ($target as $member) {
-            if ($this->traverseAndPersistObject($map, $member, $data) === false) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -477,14 +560,14 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
     }
 
     /**
-     * 
+     *
      * Returns a declared friendlyname (or '__root' if none is declare) for any given column name. If the
      * column is not parseable, return false.
      *
      * @param mixed $column The column to check for friendly name.
-     * 
+     *
      * @return mixed The parsed friendlyname or false if not parseable.
-     * 
+     *
      */
     protected function getFriendlyName($column)
     {
