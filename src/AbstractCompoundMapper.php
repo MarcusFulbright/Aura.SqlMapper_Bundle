@@ -10,7 +10,7 @@ use Aura\SqlMapper_Bundle\Query\Select;
  */
 abstract class AbstractCompoundMapper implements CompoundMapperInterface
 {
-        /**
+    /**
      *
      * A callable to create individual objects.
      *
@@ -71,7 +71,9 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      * array(
      *    'propertyName' => 'friendlyName.Column',
      *    'propertyName' => array(
-     *         'propertyName' => 'friendlyName.Column'
+     *         '__friendly' => array(
+     *             'propertyName' => 'friendlyName.Column'
+     *         )
      *     )
      * );
      *
@@ -107,10 +109,18 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
         return $this->object_factory->newCollection($rows);
     }
 
+    /**
+     *
+     * Returns an individual object from the gateway using a Select.
+     *
+     * @param Select $select
+     *
+     * @return bool|mixed
+     *
+     */
     public function fetchObject(Select $select)
     {
         $row = $this->gateway->fetchRow($select);
-
         if ($row) {
             return $this->newObject($row);
         }
@@ -136,7 +146,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
         return $this->fetchObject($select);
     }
 
-   /**
+    /**
      *
      * Returns a collection from the gateway using a Select.
      *
@@ -187,18 +197,15 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
     public function fetchCollections(Select $select, $field)
     {
         $rows = $this->gateway->fetchRows($select);
-
         $row_sets = array();
         foreach ($rows as $row) {
             $key = $row[$field];
             $row_sets[$key][] = $row;
         }
-
         $collections = array();
         foreach ($row_sets as $key => $row_set) {
             $collections[$key] = $this->newCollection($row_set);
         }
-
         return $collections;
     }
 
@@ -302,7 +309,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      */
     protected function persistObjectData($object, $initial_data = null)
     {
-        $context = $this->createTraversalContext($this->getColsFields(), $object);
+        $context = $this->createTraversalContext($this->getColsFields(), $object, $initial_data);
         return $this->traverseObject($context, array($this, 'persist'));
     }
 
@@ -352,31 +359,33 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * This object outputs this {
      *
-     *     @property $context->target object The object we're concerned with traversing.
+     * @property $context->target object The object we're concerned with traversing.
      *
-     *     @property $context->properties array An array of \ReflectionProperties.
+     * @property $context->properties array An array of \ReflectionProperties.
      *
-     *     @property $context->map array The property-to-column map.
+     * @property $context->map array The property-to-column map.
      *
-     *     @property $context->inverseMap array The column-to-property map.
+     * @property $context->inverseMap array The column-to-property map.
      *
-     *     @property $context->callback \callable A function to call on individual rows.
+     * @property $context->callback \callable A function to call on individual rows.
      * }
      *
      * @param array $map The map representing this stage of traversal.
      *
      * @param mixed $target The object that the map corresponds to.
      *
-     * @param array &$output The cumulative data array.
+     * @param callable $callback
      *
-     * @return stdClass The context object.
+     * @param $initial_data
+     *
+     * @return \stdClass The context object.
      *
      */
-    protected function createTraversalContext(array $map, $target, callable $callback, array &$output = array())
+    protected function createTraversalContext(array $map, $target, callable $callback, $initial_data = null)
     {
-        $context = new stdClass();
+        $context = new \stdClass();
         $context->target = $target;
-        $context->properties = $this->getMappedProperties($target);
+        $context->properties = $this->getMappedProperties($target, $map, $initial_data);
         $context->callback = $callback;
         $context->map = $map;
         $context->inverseMap = $this->safeArrayFlip($context->map);
@@ -387,20 +396,20 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * Returns an array of properties that exist in the current context of the provided map.
      *
-     * @param mixed $object The object we care about.
+     * @param mixed $target The object we care about.
      *
      * @param array $map The PropertyName->FieldName map of the current context.
      *
      * @return array An array of ReflectionProperties.
      *
      */
-    protected function getMappedProperties($object, $map)
+    protected function getMappedProperties($target, $map, $initial_data = null)
     {
         if (is_array($target)) {
             $target = (object) $target;
         }
-        $reflection = new \ReflectionClass($target);
-        $properties = $reflection->getProperties();
+
+        $properties = $this->getRelevantProperties($target, $initial_data);
 
         $output = array();
         foreach ($properties as $property) {
@@ -412,30 +421,35 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
         return $output;
     }
 
+    protected function getRelevantProperties($target, $initial_data = null)
+    {
+        $target_reflection = new \ReflectionClass($target);
+        $target_properties = $target_reflection->getProperties();
+
+        if ($initial_data === null) {
+            return $target_properties;
+        }
+
+
+    }
+
     /**
      *
      * Traverse a given context.
      *
-     * @param array $map The map for this context of the object.
-     *
-     * @param mixed $target The object to traverse.
-     *
-     * @param array &$data The output array.
+     * @param \stdClass $context context object from createTraversalContext
      *
      * @return array An array, indexed by friendly name, with an array of rows as values.\
      *
      */
-    protected function traverseObject(stdClass $context)
+    protected function traverseObject(\stdClass $context)
     {
         $by_friendly_name = array();
-
-        /** @var \ReflectionProperty $property */
         foreach ($context->properties as $property) {
             if (! $this->handleProperty($property, $context, $by_friendly_name)) {
                 return false;
             }
         }
-
         return $this->walkTraversed($by_friendly_name, $context);
     }
 
@@ -447,7 +461,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * @param \ReflectionProperty $property The property we want to add to the output array.
      *
-     * @param stdClass $context The Traversal Context object.
+     * @param \stdClass $context The Traversal Context object.
      *
      * @param  array $output The cumulative output array, indexed by friendly name.
      *
@@ -458,13 +472,18 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
     {
         $col = $context->map[$property->name];
         $friendly_name = $this->getFriendlyName($col);
+
+        /**
+         * getFriendlyName will always return a value, it will never be false.
+         */
+
+        $val = $property->getValue($context->target);
         if ($friendly_name === false) {
             if ($this->traverseArray($val, $col, $context->callback) === false) {
                 return false;
             }
         } else {
-            $value = $property->getValue($context->target);
-            $output[$friendly_name][$col] = $value;
+            $output[$friendly_name][$col] = $val;
         }
         return true;
     }
@@ -474,24 +493,40 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      * For each member of an array, traverse as an object. This method will stop
      * processing members at the first failure.
      *
-     * @param array $map The propertyname -> fieldname map for these objects.
+     * @param array $map The propertyName -> fieldName map for these objects.
      *
      * @param array $array The array to traverse.
      *
-     * @param array &$callback The current callback method.
+     * @param callable &$callback The current callback method.
      *
-     * @return bool Whether all of these members were processed successfuly.
+     * @param array $initial_array
+     *
+     * @return bool Whether all of these members were processed successfully.
      *
      */
-    protected function traverseArray(array $map, array $array, callable $callback)
+    protected function traverseArray(array $map, array $array, callable $callback, array $initial_array = null)
     {
-        foreach ($context->target as $member) {
-            $context = $this->createTraversalContext($map, $array, $callback);
+        $array = $this->combineArraysByForeign($array, $initial_array);
+        foreach ($array as $member) {
+            $context = $this->createTraversalContext($map, $member, $callback);
             if ($this->traverseObject($context) === false) {
                 return false;
             }
         }
         return true;
+    }
+
+
+    /**
+     *
+     * @param $array
+     *
+     * @param $initial_array
+     *
+     */
+    protected function combineArraysByForeign($array, $initial_array)
+    {
+
     }
 
     /**
@@ -502,7 +537,7 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
      *
      * @param array $by_friendly_name An array of rows, indexed by friendly name.
      *
-     * @param stdClass $context The traversal context object for the object these rows came from.
+     * @param \stdClass $context The traversal context object for the object these rows came from.
      *
      * @return bool Whether this was
      *
@@ -544,37 +579,23 @@ abstract class AbstractCompoundMapper implements CompoundMapperInterface
 
     /**
      *
-     * Merges a data array split by friendly name into the output array.
-     *
-     * @param array $context Represents data for this context indexed by friendlyname.
-     *
-     * @param array &$data An array, indexed by friendly name, with an array of rows as values.
-     *
-     */
-    protected function addToDataArray(array $context, array &$data)
-    {
-        foreach ($context as $friendly_name => $properties) {
-            $data[$friendly_name][] = $properties;
-        }
-        return $data;
-    }
-
-    /**
-     *
-     * Returns a declared friendlyname (or '__root' if none is declare) for any given column name. If the
+     * Returns a declared friendlyName (or '__root' if none is declare) for any given column name. If the
      * column is not parseable, return false.
      *
      * @param mixed $column The column to check for friendly name.
      *
-     * @return mixed The parsed friendlyname or false if not parseable.
+     * @return mixed The parsed friendlyName or false if not parseable.
      *
      */
     protected function getFriendlyName($column)
     {
+        /**
+         * Needs the concept of multiple levels built in.
+         */
+
         if (! is_string($column)) {
             return false;
         }
-
         $pieces = explode('.', $column);
         if (count($pieces) > 1) {
             return $pieces[0];

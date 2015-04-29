@@ -120,6 +120,10 @@ abstract class AbstractCompoundGateway implements CompoundGatewayInterface
      */
     abstract public function getJoins();
 
+    abstract public function getPrimaryCol($friendly_name = null);
+
+    abstract public function getForeignKey($friendly_name);
+
     /**
      * we should look at using this to make friendly to table name conversion simplier
      *
