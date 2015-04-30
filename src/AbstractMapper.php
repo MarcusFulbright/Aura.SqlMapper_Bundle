@@ -76,23 +76,26 @@ abstract class AbstractMapper implements MapperInterface
      *    'phones' => array(
      *        'identity_prop' => 'phones.id',
      *        'join_prop'     => 'phones.accountId',
-     *        'joins_to'      => 'id'
+     *        'joins_to'      => 'id',
+     *        'owner'         => true
      *    ),
      *    'phones.PhoneRef'   => array(
      *        'identity_prop' => 'phones.phoneref.id'
      *        'join_prop'     => 'phones.phoneref.phoneId'
      *        'joins_to'      => 'phones.id
+     *        'owner'         => true
      *    ),
      *    'address' => array(
      *        'identity_prop' => 'addressID',
      *        'join_prop'     => 'addressID',
      *        'joins_to'      => 'accountAddressID'
+     *        'owner'         => false
      *    ),
      *    'email' => array(
      *        'identity_prop' => 'emailID'
      *        'join_prop'     => 'emailID'
      *        'joins_to'      => 'AccountEmailID'
-     *
+     *        'owner'         => false
      *    )
      * )
      *
@@ -112,7 +115,7 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param string $address address to check for
      *
-     * @return mixed
+     * @return \stdClass|bool
      *
      * @throws \Exception When address is invalid
      *
@@ -121,12 +124,12 @@ abstract class AbstractMapper implements MapperInterface
     {
         if ($this->mapsToCol($address)) {
             $property_map = $this->getPropertyMap();
-            return $property_map[$address];
+            return $this->getTableAndColumn($property_map[$address]);
         }
 
         if ($this->mapsToRelation($address)) {
             $relation_map = $this->getRelationMap();
-            return $relation_map[$address];
+            return $this->getTableAndColumn($relation_map[$address]);
         }
 
         /**
@@ -163,5 +166,23 @@ abstract class AbstractMapper implements MapperInterface
     {
         $relation_map = $this->getRelationMap();
         return isset($relation_map[$address]);
+    }
+
+    /**
+     *
+     * Handles splitting up a table.column from the property map.
+     *
+     * @param $string
+     *
+     * @return \stdClass
+     *
+     */
+    protected function getTableAndColumn($string)
+    {
+        $exploded =  explode('.', $string);
+        $output   = new \stdClass();
+        $output->column = array_pop($exploded);
+        $output->table  = implode('.', $exploded);
+        return $output;
     }
 }

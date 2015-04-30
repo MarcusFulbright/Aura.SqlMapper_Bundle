@@ -76,26 +76,6 @@ abstract class AbstractManager implements ManagerInterface
         return null;
     }
 
-    /**
-     *
-     * Handles splitting up a table.column from the property map.
-     *
-     * Table will be first, and col will be second unless there is only one result, then it is a col on the root table.
-     *
-     * @param $string
-     *
-     * @return \stdClass
-     *
-     */
-    protected function getTableAndColumn($string)
-    {
-        $exploded =  explode('.', $string);
-        $output   = new \stdClass();
-        $output->table  = $exploded[0];
-        $output->column = $exploded[1];
-        return $output;
-    }
-
     public function select()
     {
         $cols = array();
