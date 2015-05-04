@@ -51,4 +51,15 @@ interface MapperInterface
      * @return string
      */
     public function getIdentityProp();
+
+        /**
+     *
+     * Handles splitting up a table.column from the property map.
+     *
+     * @param $string
+     *
+     * @return \stdClass
+     *
+     */
+    public function getTableAndColumn($string);
 }

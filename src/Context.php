@@ -1,21 +1,22 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-use Aura\SqlMapper_Bundle\MapperInterface;
-
 /**
  * Class Context
  * @package Aura\SqlMapper_Bundle
  */
-class Context {
-
+class Context implements ContextInterface
+{
     protected $target;
+
     protected $initial_data;
 
     protected $mapper;
 
     protected $pointer;
+
     protected $address = '';
+
     protected $current = null;
 
     /**
@@ -27,18 +28,132 @@ class Context {
         $target,
         MapperInterface $mapper,
         $initial_data = null
-    )
-    {
+    ) {
         $this->target = $target;
         $this->pointer = $target;
         $this->mapper = $mapper;
         $this->initial_data = $initial_data;
     }
 
+    /**
+     *
+     * array(
+     *    'object' => $object,
+     *    0 => array(
+     *       'table' => 'Account',
+     *       'data'  => array(
+     *          'AccountID' => 1,
+     *          'AccountName => 'Xzibit'
+     *       ),
+     *    ),
+     *    1 => array(
+     *       'table' => 'Email'
+     *       'data' => array(
+     *            'col' => 'val'
+     *       ),
+     *    ),
+     *    2 => array(
+     *       'table' => false,
+     *       'data' => array(
+     *         0 => array(
+     *              'object' => $object,
+     *              0 => array(
+     *                 'table' => 'phone',
+     *                 'data' => array(
+     *                      'PhoneId' => 1,
+     *                      'Number' => 55555555
+     *              ),
+     *              1 => array(
+                        'table'  => 'phoneRef',
+     *                  'data'   => array(
+     *                      'phoneRefID' => 8,
+     *                      'phoneRefDescription => 'work'
+     *                  )
+     *              )
+     *         )
+     *    )
+     * )
+     *
+     *
+     */
+    protected function initStack($target, $inital = null)
+    {
+        $properties = $this->getMappedProperties($target);
+        $by_tables  = $this->organizeByTable($properties, $target);
+        $by_talbes_initial = $this->organizeByTable($properties, $inital);
+
+    }
+
+    /**
+     *
+     * Traverse a given object.
+     *
+     * array (
+     *     'table' => array(
+     *        col => val
+     *     )
+     * )
+     *
+     * @param $properties
+     *
+     * @return array An array, indexed by table, with an array of rows as values.
+     *
+     */
+    protected function organizeByTable($properties)
+    {
+        $by_table = array();
+        foreach ($properties as $property) {
+            $new = $this->handleProperty($property);
+            if (! $new) {
+                return false;
+            }
+            $by_table[$new->table] = $new->values;
+        }
+        return $by_table;
+    }
+
+    /**
+     *
+     * For a given property (and it's traversal context), by friendly name and add to the output array.
+     *
+     * If we come across a nested array in the map, then traverse that array.
+     *
+     * @param \ReflectionProperty $property The property we want to add to the output array.
+     *
+     * @param  array $output The cumulative output array, indexed by friendly name.
+     *
+     * @return bool Whether or not we were successful in handling this property.
+     *
+     */
+    protected function handleProperty(\ReflectionProperty $property)
+    {
+        $property_address = $this->getAddress($property);
+
+        $val = $property->getValue($object);
+        if ($this->mapper->mapsToRelation($property_address)) {
+
+        } else {
+            $table = $this->mapper->resolveAddress($property_address);
+            $table = $this->mapper->getTableAndColumn($table);
+            $output[$table->table][$table->column] = $val;
+        }
+        return true;
+    }
+
+    /**
+     * stdClass {
+     *    table => 'tableNameYo',
+     *    row   => array(col => value),
+     *    initial_row => array(col => value),
+     * }
+     *
+     *
+     * @return null
+     */
     public function getNext()
     {
         /**
-         * @todo
+         * @todo needs to iterate
          */
         return $this->getCurrent();
     }
@@ -91,52 +206,6 @@ class Context {
         return $target_properties;
     }
 
-    /**
-     *
-     * Traverse a given object.
-     *
-     * @param $properties
-     *
-     * @return array An array, indexed by friendly name, with an array of rows as values.\
-     *
-     */
-    protected function organizeByTable($properties)
-    {
-        $by_friendly_name = array();
-        foreach ($properties as $property) {
-            if (! $this->handleProperty($property, $by_friendly_name)) {
-                return false;
-            }
-        }
-        return $by_friendly_name;
-    }
-
-    /**
-     *
-     * For a given property (and it's traversal context), by friendly name and add to the output array.
-     *
-     * If we come across a nested array in the map, then traverse that array.
-     *
-     * @param \ReflectionProperty $property The property we want to add to the output array.
-     *
-     * @param  array $output The cumulative output array, indexed by friendly name.
-     *
-     * @return bool Whether or not we were successful in handling this property.
-     *
-     */
-    protected function handleProperty(\ReflectionProperty $property, array &$output = array())
-    {
-        $propertyAddress = $this->getAddress($property);
-        $val = $property->getValue($property);
-        if ($this->mapper->mapsToRelation($propertyAddress)) {
-            if ($this->traverseArray($val, $col, $context->callback) === false) {
-                return false;
-            }
-        } else {
-            $output[$friendly_name][$col] = $val;
-        }
-        return true;
-    }
 
     /**
      * @param \ReflectionProperty $property

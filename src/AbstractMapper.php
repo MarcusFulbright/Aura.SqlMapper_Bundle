@@ -22,45 +22,6 @@ abstract class AbstractMapper implements MapperInterface
 {
     /**
      *
-     * Should Return an array that pairs addresses to columns.
-     *
-     * Example:
-     *
-     * array(
-     *     'id'                         => 'account.accountId',
-     *     'phones.id'                  => 'phones.phoneId',
-     *     'phones.phoneNumber'         => 'table.column',
-     *     'phones.accountId'           => 'phones.accountId'
-     *     'phones.phoneref.description => 'phoneref.description'
-     *     'phones.phoneref.id'         => 'phoneref.phonerefId',
-     *     'phones.phoeref.phoneId      => 'phoneref.phoneId',
-     * );
-     *
-     * @return mixed
-     *
-     */
-    abstract public function getPropertyMap();
-
-    /**
-     * array(
-     *   'email' => array(
-     *       'EmailAddress',
-     *       'EmailType',
-     *       'EmailID'
-     *   )
-     * )
-     *
-     * @return null
-     *
-     */
-    public function getEmbeddedMap()
-    {
-        return null;
-    }
-
-
-    /**
-     *
      * Returns the name of the property that is a unique identifier(such as a primary key or UUID).
      *
      * @return string
@@ -70,31 +31,101 @@ abstract class AbstractMapper implements MapperInterface
 
     /**
      *
+     * Should Return an array that pairs addresses to columns.
+     *
+     * Example:
+     *
+     * array(
+     *     'id'                         => 'account.accountId',
+     *     'accountEmailID'             => 'account.emailId'
+     *     'phones.id'                  => 'phone.phoneId',
+     *     'phones.phoneNumber'         => 'phone.number',
+     *     'phones.accountId'           => 'phone.accountId'
+     *     'phones.description          => 'phone.phoneRef.description'
+     *     'phones.phonerefid'          => 'phone.phoneRef.phonerefId',
+     *     'phones.phoneId              => 'phone.phoneRef.phoneId',
+     *     'EmailAddress'               => 'email.address',
+     *     'EmailID'                    => 'email.id',
+     *     'addressAccountID'           => 'address.accountID',
+     *     'AddressLineOne'             => 'address.line_one'
+     * );
+     *
+     * @return mixed
+     *
+     */
+    abstract public function getPropertyMap();
+
+
+    /**
+     *
+     * array(
+     *    '__root' => array(
+     *         'id',
+     *         'accountEmailID',
+     *         'EmailAddress',
+     *         'addressAccountID',
+     *         'AddressLineOne'
+     *    ),
+     *    'phones' => array(
+     *         'id',
+     *         'phoneNumber',
+     *         'accountId',
+     *         'description',
+     *         'phonerefid',
+     *         'phoneId',
+     *    )
+     * )
+     *
+     * array(
+     *   'account' => array(
+     *        'id',
+     *        'accountEmailId'
+     *   )
+     *   'phone' => array
+     *
+     *
+     *
+     *
+     */
+    protected function locationsArray()
+    {
+        $property_map = $this->getPropertyMap();
+        $map = array();
+        foreach ($property_map as $address => $table_col) {
+            $exploded =  explode('.', $address);
+            $property = array_pop($exploded);
+            $room     = implode('.', $exploded);
+            $map[$room][] = $property;
+        }
+    }
+
+    /**
+     *
      * Should return a map of all relationship info or null of there are no relations.
      *
      * array(
      *    'phones' => array(
      *        'identity_prop' => 'phones.id',
      *        'join_prop'     => 'phones.accountId',
-     *        'joins_to'      => 'id',
+     *        'joins_to'      => 'account.id',
      *        'owner'         => true
      *    ),
-     *    'phones.PhoneRef'   => array(
+     *    'phoneRef'   => array(
      *        'identity_prop' => 'phones.phoneref.id'
      *        'join_prop'     => 'phones.phoneref.phoneId'
      *        'joins_to'      => 'phones.id
      *        'owner'         => true
      *    ),
      *    'address' => array(
-     *        'identity_prop' => 'addressID',
-     *        'join_prop'     => 'addressID',
-     *        'joins_to'      => 'accountAddressID'
-     *        'owner'         => false
+     *        'identity_prop' => 'address.id',
+     *        'join_prop'     => 'address.accountID',
+     *        'joins_to'      => 'account.id'
+     *        'owner'         => true
      *    ),
      *    'email' => array(
-     *        'identity_prop' => 'emailID'
-     *        'join_prop'     => 'emailID'
-     *        'joins_to'      => 'AccountEmailID'
+     *        'identity_prop' => 'email.id'
+     *        'join_prop'     => 'email.id'
+     *        'joins_to'      => 'account.EmailID'
      *        'owner'         => false
      *    )
      * )
@@ -115,7 +146,7 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param string $address address to check for
      *
-     * @return \stdClass|bool
+     * @return string|array
      *
      * @throws \Exception When address is invalid
      *
@@ -124,12 +155,12 @@ abstract class AbstractMapper implements MapperInterface
     {
         if ($this->mapsToCol($address)) {
             $property_map = $this->getPropertyMap();
-            return $this->getTableAndColumn($property_map[$address]);
+            return $property_map[$address];
         }
 
         if ($this->mapsToRelation($address)) {
             $relation_map = $this->getRelationMap();
-            return $this->getTableAndColumn($relation_map[$address]);
+            return $relation_map[$address];
         }
 
         /**
@@ -177,7 +208,7 @@ abstract class AbstractMapper implements MapperInterface
      * @return \stdClass
      *
      */
-    protected function getTableAndColumn($string)
+    public function getTableAndColumn($string)
     {
         $exploded =  explode('.', $string);
         $output   = new \stdClass();
