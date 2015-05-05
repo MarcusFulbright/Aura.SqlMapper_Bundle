@@ -397,6 +397,8 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @return Select
      *
+     * @todo take an array of $col => $val
+     *
      */
     public function selectBy($col, $val)
     {
