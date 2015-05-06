@@ -1,8 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-
-
 use Aura\Sql\ConnectionLocator;
 use Aura\Sql\ExtendedPdo;
 use Aura\Sql\Profiler;

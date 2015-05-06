@@ -8,7 +8,6 @@ namespace Aura\SqlMapper_Bundle;
  */
 class FakeAggregateMapper extends AbstractAggregateMapper
 {
-
     protected $property_map = [
         'id'                      => 'aura_test_table.id',
         'name'                    => 'aura_test_table.',

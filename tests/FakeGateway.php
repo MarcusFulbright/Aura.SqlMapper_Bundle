@@ -4,6 +4,7 @@ namespace Aura\SqlMapper_Bundle;
 class FakeGateway extends AbstractGateway
 {
     protected $table = 'aura_test_table';
+
     protected $primary_col = 'id';
 
     public function getTable()
