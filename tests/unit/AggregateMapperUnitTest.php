@@ -13,7 +13,6 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
     {
         parent::setUp();
         $this->object_factory = \Mockery::mock('Aura\SqlMapper_Bundle\ObjectFactory');
-        $this->reflection = new \ReflectionClass(new FakeAggregateMapper($this->object_factory));
     }
 
     public function tearDown() {
@@ -88,7 +87,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
      *
      * This handy little function compares two arrays. The way it differs from doing a direct
      * equality check is that it doesn't care if your indexed arrays are out of order. It just
-     * cares that every
+     * cares that every member is present.
      *
      * @param array $map_one
      *
@@ -437,7 +436,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                 'relations' => array(
                     array(
                         'relation_name' => 'embedded',
-                        'other_side' => 'embedded1'
+                        'other_side' => 'embedded'
                     )
                 )
             ),
