@@ -10,9 +10,9 @@ class FakeAggregateMapper extends AbstractAggregateMapper
 {
     protected $property_map = [
         'id'                      => 'aura_test_table.id',
-        'name'                    => 'aura_test_table.',
-        'buildingID'              => 'aura_test_table.',
-        'floorID'                 => 'aura_test_table.',
+        'name'                    => 'aura_test_table.name',
+        'buildingID'              => 'aura_test_table.building',
+        'floorID'                 => 'aura_test_table.floor',
         'building.id'             => 'aura_test_building.id',
         'building.name'           => 'aura_test_building.name',
         'building.typeCode'       => 'aura_test_building.type',
@@ -71,10 +71,10 @@ class FakeAggregateMapper extends AbstractAggregateMapper
      */
     protected $omit = [
         'building',
-        'building.typeref',
+        'building.type',
         'floor',
         'task',
-        'task.typeref'
+        'task.type'
     ];
 
 
@@ -86,8 +86,8 @@ class FakeAggregateMapper extends AbstractAggregateMapper
     public function getPropertyMap()
     {
         $omit = $this->omit;
-        return array_filter(
-            $this->property_map,
+        $filtered_keys = array_filter(
+            array_keys($this->property_map),
             function ($key) use($omit) {
                 foreach ($omit as $address) {
                     if (strpos($key, "$address.") === 0) {
@@ -95,9 +95,9 @@ class FakeAggregateMapper extends AbstractAggregateMapper
                     }
                 }
                 return true;
-            },
-            ARRAY_FILTER_USE_KEY
+            }
         );
+        return array_intersect_key($this->property_map, array_flip($filtered_keys));
     }
 
     /**
@@ -108,54 +108,56 @@ class FakeAggregateMapper extends AbstractAggregateMapper
     public function getRelationMap()
     {
         $omit = $this->omit;
-        return array_filter(
-            $this->property_map,
+        $filtered_keys = array_filter(
+            array_keys($this->relation_map),
             function ($key) use($omit) {
                 foreach ($omit as $address) {
-                    if (strpos($key, $address) === 0) {
+                    if ($key === $address) {
                         return false;
                     }
                 }
                 return true;
-            },
-            ARRAY_FILTER_USE_KEY
+            }
         );
+        return array_intersect_key($this->relation_map, array_flip($filtered_keys));
     }
 
     /**
      * This will trigger included relations in the map output. This is only for testing purposes
      * and should never be implemented this way.
      *
-     * @param $address
+     * @param string ...$address Addresses to be included
      *
      * @return bool
      */
-    public function includeRelation($address) {
-        if (in_array($address, $this->omit) !== false) {
-            $index = array_search($address, $this->omit);
-            array_splice(
-                $this->omit,
-                $index,
-                1
-            );
-            return true;
+    public function includeRelation() {
+        $args = func_get_args();
+        foreach ($args as $address) {
+            if (in_array($address, $this->omit) !== false) {
+                $index = array_search($address, $this->omit);
+                array_splice(
+                    $this->omit,
+                    $index,
+                    1
+                );
+            }
         }
-        return false;
     }
 
     /**
      * This will trigger included relations in the map output. This is only for testing purposes
      * and should never be implemented this way.
      *
-     * @param $address
+     * @param string ...$address Addresses to be omitted.
      *
      * @return bool
      */
-    public function excludeRelation($address) {
-        if (in_array($address, $this->omit) === false) {
-            $this->omit[] = $address;
-            return true;
+    public function excludeRelation() {
+        $args = func_get_args();
+        foreach ($args as $address) {
+            if (in_array($address, $this->omit) === false) {
+                $this->omit[] = $address;
+            }
         }
-        return false;
     }
 }
