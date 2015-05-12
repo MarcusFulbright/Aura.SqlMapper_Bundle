@@ -16,6 +16,9 @@
         "aura/sql": "~2.0",
         "aura/sqlquery": "~2.0"
     },
+    "require-dev": {
+        "mockery/mockery": "~0.9"
+    },
     "autoload": {
         "psr-4": {
             "Aura\\SqlMapper_Bundle\\": "src/"
