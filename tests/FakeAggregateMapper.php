@@ -32,31 +32,31 @@ class FakeAggregateMapper extends AbstractAggregateMapper
     protected $relation_map = [
         'building' => [
             'joinProperty' => 'id',
-            'references'   => 'buildingID',
+            'reference'   => 'buildingID',
             'owner'        => false,
             'type'         => 'hasOne'
         ],
         'building.type' => [
             'joinProperty' => 'code',
-            'references'   => 'typeCode',
+            'reference'   => 'typeCode',
             'owner'        => false,
             'type'         => 'hasOne'
         ],
         'floor' => [
             'joinProperty' => 'id',
-            'references'   => 'floorID',
+            'reference'   => 'floorID',
             'owner'        => false,
             'type'         => 'hasOne'
         ],
         'task' => [
             'joinProperty' => 'userID',
-            'references'   => 'id',
+            'reference'   => 'id',
             'owner'        => true,
             'type'         => 'hasMany'
         ],
         'task.type' => [
             'joinProperty' => 'code',
-            'references'   => 'typeCode',
+            'reference'   => 'typeCode',
             'owner'        => false,
             'type'         => 'hasOne'
         ]

@@ -162,7 +162,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             array(
                 'task' => array(
                     'joinProperty' => 'userID',
-                    'references'   => 'id',
+                    'reference'   => 'id',
                     'owner'        => true,
                     'type'         => 'hasMany'
                 )
