@@ -123,7 +123,7 @@ abstract class AbstractMapper implements MapperInterface
      */
     public function getIdentityField()
     {
-        return $this->gateway->getPrimaryCol();
+        return $this->getFieldFromCol($this->gateway->getPrimaryCol());
     }
 
     /**
@@ -506,6 +506,20 @@ abstract class AbstractMapper implements MapperInterface
     protected function getColFromField($field) {
         $fields_cols = $this->getFieldsCols();
         return $fields_cols[$field];
+    }
+
+    /**
+     *
+     * Converts a field name into a column name.
+     *
+     * @param string $col The column name to convert into a field name.
+     *
+     * @return string mixed The field name.
+     *
+     */
+    protected function getFieldFromCol($col) {
+        $cols_fields = $this->getColsFields();
+        return $cols_fields[$col];
     }
 
     /**
