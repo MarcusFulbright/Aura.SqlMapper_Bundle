@@ -175,6 +175,32 @@ abstract class AbstractGateway implements GatewayInterface
 
     /**
      *
+     * Adds a not-in clause to a Select query.
+     *
+     * @param Select $select The Select to ater
+     *
+     * @param string $col The column to use for matching.
+     *
+     * @param mixed $val The value(s) to exclude
+     *
+     * @return Select
+     *
+     */
+    public function excludeValues(Select $select, $col, $val)
+    {
+        $where = $this->getTableCol($col);
+        if (is_array($val)) {
+            $where .= " NOT IN (:{$col})";
+        } else {
+            $where .= " != :{$col}";
+        }
+        $select->where($where);
+        $select->bindValue($col, $val);
+        return $select;
+    }
+
+    /**
+     *
      * Creates a Select query to match against a given column and value(s).
      *
      * @param string $col The column to use for matching.
