@@ -141,7 +141,7 @@ class MapperTest extends \PHPUnit_Framework_TestCase
 
     public function testFetchCollections()
     {
-        $actual = $this->mapper->fetchCollectionsBy('building', 1, 'floor');
+        $actual = $this->mapper->fetchCollectionsBy('buildingNumber', 1, 'floor');
         $expect = [
             '1' => [
                 (object) [
@@ -216,13 +216,13 @@ class MapperTest extends \PHPUnit_Framework_TestCase
     public function testUpdate()
     {
         // fetch an object, then modify and update it
-        $object = $this->mapper->fetchObjectBy('name', 'Anna');
+        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
         $object->firstName = 'Annabelle';
         $affected = $this->mapper->update($object);
 
         // did it update?
         $this->assertTrue($affected == 1);
-        $actual = $this->mapper->fetchObjectBy('name', 'Annabelle');
+        $actual = $this->mapper->fetchObjectBy('firstName', 'Annabelle');
         $this->assertEquals($actual, $object);
 
         // did anything else update?
@@ -234,7 +234,7 @@ class MapperTest extends \PHPUnit_Framework_TestCase
     public function testUpdateOnlyChanges()
     {
         // fetch an object, retain its original data, then change it
-        $object = $this->mapper->fetchObjectBy('name', 'Anna');
+        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
         $initial_data = (array) $object;
         $object->firstName = 'Annabelle';
 
@@ -258,11 +258,11 @@ class MapperTest extends \PHPUnit_Framework_TestCase
     public function testDelete()
     {
         // fetch an object, then delete it
-        $object = $this->mapper->fetchObjectBy('name', 'Anna');
+        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
         $this->mapper->delete($object);
 
         // did it delete?
-        $actual = $this->mapper->fetchObjectBy('name', 'Anna');
+        $actual = $this->mapper->fetchObjectBy('firstName', 'Anna');
         $this->assertFalse($actual);
 
         // do we still have everything else?
