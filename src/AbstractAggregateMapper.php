@@ -95,7 +95,8 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      * @return null|array
      *
      */
-    public function getRelationMap() {
+    public function getRelationMap()
+    {
         return null;
     }
 
@@ -177,7 +178,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      * @return \StdClass A StdObject with an 'address' and 'property' property.
      *
      */
-    protected function separatePropertyFromAddress($property_address)
+    public function separatePropertyFromAddress($property_address)
     {
         $address_segments = $this->splitStringOnLast(
             $this->address_delimiter,
@@ -205,7 +206,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      * describe both a mapper AND a field.
      *
      */
-    protected function separateMapperFromField($mapper_address)
+    public function separateMapperFromField($mapper_address)
     {
         if (strpos($mapper_address, $this->address_delimiter) === false) {
             throw new Exception('No mapper declared in mapper address.');

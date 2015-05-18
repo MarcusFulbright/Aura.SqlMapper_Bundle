@@ -6,19 +6,32 @@ use Aura\Sql\ExtendedPdo;
 use Aura\Sql\Profiler;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
-use Aura\SqlMapper_Bundle\MapperLocator;
 
-class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
+/**
+ * Test DbMediatorTest
+ * @package Aura\SqlMapper_Bundle
+ */
+class DbMediatorTest extends \PHPUnit_Framework_TestCase 
 {
-    protected $domainMapper;
+    /** @var DbMediator */
+    protected $mediator;
 
-    protected $connections;
+    /** @var  ConnectionLocator */
     protected $connection_locator;
-    protected $profiler;
+
     protected $query;
-    protected $object_factory;
+
+    /** @var Filter */
     protected $filter;
+
+    /** @var Profiler */
+    protected $profiler;
+
+    /** @var MapperLocator */
     protected $mapper_locator;
+
+    /** @var  AggregateMapperInterface */
+    protected $aggregate_mapper;
 
     protected $data = [
         'aura_test_table' => [
@@ -75,11 +88,8 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        parent::setUp();
-
-        $profiler = new Profiler;
+        $profiler = new Profiler();
         $this->profiler = $profiler;
-
 
         $this->query = new ConnectedQueryFactory(new QueryFactory('sqlite'));
         $this->filter = new Filter();
@@ -117,10 +127,22 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
             'aura_test_table'
         );
         $fixture->exec();
+
+        $this->aggregate_mapper = new FakeAggregateMapper(new ObjectFactory());
+        $this->aggregate_mapper->includeRelation('building', 'building.type', 'floor', 'task', 'task.type');
+
+        $this->mediator = new DbMediator(
+            $this->mapper_locator,
+            new Transaction(),
+            new OperationArranger(),
+            new PlaceholderResolver()
+        );
     }
 
-    public function testNothing()
+
+    public function testSuccess()
     {
-        //$agMap = new FakeAggregateMapper();
+        //var_dump($this->mediator->select($this->aggregate_mapper, array('building.id' => 1)));
+        //die('end');
     }
 }

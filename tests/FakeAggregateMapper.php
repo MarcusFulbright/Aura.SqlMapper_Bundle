@@ -4,7 +4,7 @@ namespace Aura\SqlMapper_Bundle;
 /**
  * [summary].
  *
- *[description]
+ * [description]
  */
 class FakeAggregateMapper extends AbstractAggregateMapper
 {
