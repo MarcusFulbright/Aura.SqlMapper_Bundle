@@ -63,7 +63,7 @@ class DbMediator implements DbMediatorInterface
             $row_mapper = $this->locator->__get($operation['mapper']);
             if (isset($operation['criteria'])) {
                 $field = key($operation['criteria']);
-                $value = $this->placeholder_resolver->resolve(current($operation['criteria']), $results);
+                $value = $this->placeholder_resolver->resolve(current($operation['criteria']), $results, $mapper);
                 $results[$property] = $row_mapper->fetchCollectionBy($field, $value);
             } else {
                 $results[$property] = $row_mapper->fetchCollection(

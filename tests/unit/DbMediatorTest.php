@@ -142,7 +142,7 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
 
     public function testSuccess()
     {
-        //var_dump($this->mediator->select($this->aggregate_mapper, array('building.id' => 1)));
-        //die('end');
+        var_dump($this->mediator->select($this->aggregate_mapper, array('building.id' => 1)));
+        die('end');
     }
 }
