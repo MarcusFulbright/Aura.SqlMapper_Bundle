@@ -23,7 +23,7 @@ class OperationArranger
      *
      * @return array
      */
-    public function arrangeForSelect(AggregateMapperInterface $map, array $criteria = null)
+    public function arrangeForSelect(AggregateMapperInterface $map, array $criteria = array())
     {
         $entry_context = $this->getEntryContext($criteria);
         return $this->getOrderedOperations($entry_context, $map);
@@ -40,7 +40,7 @@ class OperationArranger
     protected function getEntryContext(array $criteria)
     {
         $context = new \stdClass();
-        if ($criteria != null) {
+        if (! empty($criteria)) {
             $entry_pieces      = explode('.', key($criteria));
             $context->field    = array_pop($entry_pieces);
             $context->property = implode('.', $entry_pieces);
