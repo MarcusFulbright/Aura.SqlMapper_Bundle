@@ -15,39 +15,42 @@ class PlaceholderResolver
      * @param $value
      * @param array $results
      * @param AggregateMapperInterface $mapper
-     * @return array|mixed|string
+     * @return array|string
      */
     public function resolve($value, array $results, AggregateMapperInterface $mapper)
     {
         $has_placeholder = substr($value, 0, 1) === ':';
         $where_in        = array();
         if ($has_placeholder) {
-            $value_pieces = explode('.', $value);
-            $field        = array_pop($value_pieces);
-            $address      = ltrim(implode('.', $value_pieces), ':');
-            foreach ($results[$address] as $row_data) {
-                if ($field === 'floorID') {
-                    $property = $mapper->getPropertyMap()[$field];
-                    $mapper_address = $mapper->separateMapperFromField($property);
-                    $name = $mapper_address->field;
-                    $where_in[] = $row_data->$name;
-                } else {
-                    $value = ltrim($value, ':');
-                    /*
-                     * if AggregateBuilder had __root prefix in the propertyMap this could be avoided
-                     */
-                    if ($value === '__root.id') {
-                        $value = preg_replace("/(^.+[.])/", '', $value);
-                    }
-                    $mapper_address = $mapper->separateMapperFromField(
-                        $mapper->getPropertyMap()[$value]
-                    );
-                    $name = $mapper_address->field;
-                    $where_in[] = $row_data->$name;
-                }
+            $context = $this->getContext($value);
+            foreach ($results[$context->address] as $row_data) {
+                $name = $this->translateField($mapper, $context->propIndex);
+                $where_in[] = $row_data->$name;
             }
             return $where_in;
         }
         return $value;
+    }
+
+    protected function translateField(AggregateMapperInterface $mapper, $prop_index)
+    {
+        $mapper_address = $mapper->separateMapperFromField(
+            $mapper->getPropertyMap()[$prop_index]
+        );
+        return $mapper_address->field;
+    }
+
+    protected function getContext($value)
+    {
+        $context          = new \stdClass();
+        $value_pieces     = explode('.', $value);
+        $field            = array_pop($value_pieces);
+        $context->address = ltrim(implode('.', $value_pieces), ':');
+        if ($context->address === '__root') {
+            $context->propIndex = $field;
+        } else {
+            $context->propIndex = $context->address . '.' . $field;
+        }
+        return $context;
     }
 }
