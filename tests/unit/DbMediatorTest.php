@@ -139,10 +139,64 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
         );
     }
 
+    protected function createStdClass(array $props)
+    {
+        $obj = new \stdClass();
+        foreach ($props as $prop => $value) {
+            $obj->$prop = $value;
+        }
+        return $obj;
+    }
 
     public function testSuccess()
     {
-        var_dump($this->mediator->select($this->aggregate_mapper, array('building.id' => 1)));
-        die('end');
+        $expected = array(
+            'task' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'userid' => 1,
+                    'name' => 'Manage Calendar',
+                    'type' => 'S')
+            )),
+            '__root' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'name' => 'Anna',
+                    'building' => 1,
+                    'floor' => 1
+                )
+            )),
+            'building' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'name' => 'Bower Street',
+                    'type' => 'NP'
+                )
+            )),
+            'building.type' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'code' => 'NP',
+                    'decode' => 'Non-Profit'
+                )
+            )),
+            'floor' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'name' => 'Reception'
+                )
+            )),
+            'task.type' => array($this->createStdClass(
+                array(
+                    'id' => 1,
+                    'code' => 'S',
+                    'decode' => 'Scheduling'
+                )
+            ))
+        );
+        $this->assertEquals(
+            $expected,
+            $this->mediator->select($this->aggregate_mapper, array('task.type' => 'S'))
+        );
     }
 }
