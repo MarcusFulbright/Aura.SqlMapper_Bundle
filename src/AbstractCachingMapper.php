@@ -10,7 +10,7 @@ namespace Aura\SqlMapper_Bundle;
 
 use Aura\SqlMapper_Bundle\Query\Select;
 
-abstract class AbstractCachingMapper extends AbstractMapper
+abstract class AbstractCachingMapper extends AbstractMapper implements CachingMapperInterface
 {
 
     /**
@@ -36,6 +36,18 @@ abstract class AbstractCachingMapper extends AbstractMapper
     ) {
         parent::__construct($gateway, $object_factory, $filter);
         $this->cache = new RowCache($this->getIdentityField());
+    }
+
+    /**
+     *
+     * Getter for the RowCache on this object.
+     *
+     * @return RowCache
+     *
+     */
+    public function getRowCache()
+    {
+        return $this->cache;
     }
 
     /**
