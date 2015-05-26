@@ -116,6 +116,22 @@ class RowCache
 
     /**
      *
+     * Takes an instance of a row and returns a copy of the cached instance.
+     *
+     * @param mixed|object $row The row to check for.
+     *
+     * @return bool Whether or not this row exists in the cache.
+     *
+     * @throws \Exception If provided row does not have the appropriate identity field.
+     *
+     */
+    public function isCached($row)
+    {
+        return $this->getCachedData($row) !== null;
+    }
+
+    /**
+     *
      * Takes an instance of a row and removes any version of that row from the cache.
      *
      * @param mixed|object $row The row to remove from the cache.
@@ -135,7 +151,7 @@ class RowCache
 
     /**
      *
-     * Checks to see if the provided $row is a valid member of this cache.
+     * Ensures that the provided row object has a valid identity field.
      *
      * @param $row The row to check.
      *
