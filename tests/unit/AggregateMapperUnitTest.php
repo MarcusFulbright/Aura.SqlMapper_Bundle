@@ -144,11 +144,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             array(
                 'id' =>  'aura_test_table.id',
                 'name' => 'aura_test_table.name',
-                'buildingID' => 'aura_test_table.building',
-                'floorID' => 'aura_test_table.floor',
                 'building.id' => 'aura_test_building.id',
                 'building.name' => 'aura_test_building.name',
-                'building.typeCode' => 'aura_test_building.type'
             )
         );
     }
@@ -161,10 +158,10 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             $relation_map,
             array(
                 'task' => array(
-                    'joinProperty' => 'userID',
-                    'reference'   => 'id',
-                    'owner'        => true,
-                    'type'         => 'hasMany'
+                    'join_property'   => 'id',
+                    'reference_field' => 'aura_test_task.userid',
+                    'owner'           => true,
+                    'type'            => 'hasMany'
                 )
             )
         );
@@ -184,9 +181,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'mapper' => 'aura_test_table',
                         'fields' => array(
                             'id',
-                            'name',
-                            'building',
-                            'floor'
+                            'name'
                         ),
                         'relations' => array()
                     )
@@ -415,13 +410,12 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
         $property_map = array(
             'propertyOne' => 'mapper.propOne',
             'propertyTwo' => 'mapper.propTwo',
-            'embedded.propertyOne' => 'secondMapper.embeddedPropOne',
-            'embedded.propertyTwo' => 'secondMapper.embeddedPropTwo'
+            'embedded.propertyOne' => 'secondMapper.embeddedPropOne'
         );
         $relation_map = array(
             'embedded' => array(
-                'joinProperty' => 'propertyTwo',
-                'reference' => 'propertyTwo',
+                'join_property' => 'propertyTwo',
+                'reference_field' => 'secondMapper.embeddedPropTwo',
                 'owner' => true,
                 'type' => 'hasOne'
             )
@@ -455,10 +449,11 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             )
         );
 
+        $results = $method->invokeArgs($mapper, array($property_map, $relation_map));
         $this->assertTrue(
             $this->mapsMatch(
                 $should_equal,
-                $method->invokeArgs($mapper, array($property_map, $relation_map))
+                $results
             )
         );
     }
