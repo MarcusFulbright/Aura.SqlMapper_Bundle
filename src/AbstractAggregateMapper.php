@@ -156,8 +156,14 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
                 'relation_name' => $address,
                 'other_side' => $address
             );
-        }
 
+            $hidden_field = $this->separateMapperFromField($relation_info['reference_field']);
+            if ($relation_info['owner'] === true) {
+                $relation_to_mapper[$address]['fields'][] = $hidden_field->field;
+            } else {
+                $relation_to_mapper[$relatesTo->address]['fields'][] = $hidden_field->field;
+            }
+        }
         return $relation_to_mapper;
     }
 

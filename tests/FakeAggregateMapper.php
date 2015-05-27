@@ -11,54 +11,49 @@ class FakeAggregateMapper extends AbstractAggregateMapper
     protected $property_map = [
         'id'                      => 'aura_test_table.id',
         'name'                    => 'aura_test_table.name',
-        'buildingID'              => 'aura_test_table.building',
-        'floorID'                 => 'aura_test_table.floor',
         'building.id'             => 'aura_test_building.id',
         'building.name'           => 'aura_test_building.name',
-        'building.typeCode'       => 'aura_test_building.type',
         'building.type.id'        => 'aura_test_building_typeref.id',
         'building.type.code'      => 'aura_test_building_typeref.code',
         'building.type.decode'    => 'aura_test_building_typeref.decode',
         'floor.id'                => 'aura_test_floor.id',
         'floor.name'              => 'aura_test_floor.name',
         'task.id'                 => 'aura_test_task.id',
-        'task.userID'             => 'aura_test_task.userid',
         'task.name'               => 'aura_test_task.name',
-        'task.typeCode'           => 'aura_test_task.type',
         'task.type.code'          => 'aura_test_task_typeref.code',
         'task.type.decode'        => 'aura_test_task_typeref.decode'
     ];
 
     protected $relation_map = [
         'building' => [
-            'joinProperty' => 'id',
-            'reference'   => 'buildingID',
-            'owner'        => false,
-            'type'         => 'hasOne'
+            'join_property'   => 'id',
+            'reference_field' => 'aura_test_table.building',
+            'owner'           => false,
+            'type'            => 'hasOne'
         ],
         'building.type' => [
-            'joinProperty' => 'code',
-            'reference'   => 'typeCode',
-            'owner'        => false,
-            'type'         => 'hasOne'
+            'join_property'   => 'code',
+            'reference_field' => 'aura_test_building.type',
+            'owner'           => false,
+            'type'            => 'hasOne'
         ],
         'floor' => [
-            'joinProperty' => 'id',
-            'reference'   => 'floorID',
-            'owner'        => false,
-            'type'         => 'hasOne'
+            'join_property'   => 'id',
+            'reference_field' => 'aura_test_table.floor',
+            'owner'           => false,
+            'type'            => 'hasOne'
         ],
         'task' => [
-            'joinProperty' => 'userID',
-            'reference'   => 'id',
-            'owner'        => true,
-            'type'         => 'hasMany'
+            'join_property'   => 'id',
+            'reference_field' => 'aura_test_task.userid',
+            'owner'           => true,
+            'type'            => 'hasMany'
         ],
         'task.type' => [
-            'joinProperty' => 'code',
-            'reference'   => 'typeCode',
-            'owner'        => false,
-            'type'         => 'hasOne'
+            'join_property'   => 'code',
+            'reference_field' => 'aura_test_task.type',
+            'owner'           => false,
+            'type'            => 'hasOne'
         ]
     ];
 
