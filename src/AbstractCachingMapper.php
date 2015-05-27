@@ -312,6 +312,11 @@ abstract class AbstractCachingMapper extends AbstractMapper implements CachingMa
         $cached = $this->cache->getCachedData($object);
         $data = $this->getRowData($object, $cached);
 
+        // No-op and return true if there are no changes.
+        if (array_keys($data) == array($this->gateway->getPrimaryCol())) {
+            return true;
+        }
+
         if ($results = (bool) $this->gateway->update($data)) {
             $this->cache->set($object);
         }
