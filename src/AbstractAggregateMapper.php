@@ -146,25 +146,117 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
             $relation_to_mapper[$property_address->address]['fields'][] = $mapper_address->field;
         }
 
-        foreach ($relation_map as $address => $relation_info) {
-            $relatesTo = $this->separatePropertyFromAddress($address);
+        foreach ($relation_map as $address => &$relation_info) {
+            $relatesTo = $this->getRelationByProperty($address);
             $relation_to_mapper[$address]['relations'][] = array(
                 'relation_name' => $address,
-                'other_side' => $relatesTo->address
+                'other_side'    => $relatesTo,
+                'details'       => &$relation_info
             );
-            $relation_to_mapper[$relatesTo->address]['relations'][] = array(
+            $relation_to_mapper[$relatesTo]['relations'][] = array(
                 'relation_name' => $address,
-                'other_side' => $address
+                'other_side'    => $address,
+                'details'       => &$relation_info
             );
 
             $hidden_field = $this->separateMapperFromField($relation_info['reference_field']);
             if ($relation_info['owner'] === true) {
                 $relation_to_mapper[$address]['fields'][] = $hidden_field->field;
             } else {
-                $relation_to_mapper[$relatesTo->address]['fields'][] = $hidden_field->field;
+                $relation_to_mapper[$relatesTo]['fields'][] = $hidden_field->field;
             }
         }
         return $relation_to_mapper;
+    }
+
+    /**
+     *
+     * Looks up a relation by name. If there is none, returns null.
+     *
+     * @param string $relation_name The relation to look up
+     *
+     * @return array|null The relation info, if it exists.
+     *
+     */
+    public function lookUpRelation($relation_name)
+    {
+        $relation_map = $this->getRelationMap();
+        if (isset($relation_map[$relation_name])) {
+            return $relation_map[$relation_name];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     *
+     * Looks up a relation by name in the relation_to_mapper map. If there is none, returns null.
+     *
+     * @param string $relation_name The relation to look up
+     *
+     * @return array|null The relation info, if it exists.
+     *
+     */
+    protected function lookUpRelationToMapper($relation_name, $key = null)
+    {
+        $relation_name = $relation_name ?: $this->root_relation_address;
+        $relation_to_mapper = $this->getRelationToMapper();
+        if (isset($relation_to_mapper[$relation_name]) && $key === null) {
+            if ($key === null) {
+                return $relation_to_mapper[$relation_name];
+            }
+        }
+        if (isset($relation_to_mapper[$relation_name][$key])) {
+            return $relation_to_mapper[$relation_name][$key];
+        }
+        return null;
+    }
+
+    /**
+     *
+     * Looks up a relation by name in the relation_to_mapper map. If there is none, returns null.
+     *
+     * @param string $relation_name The relation to look up
+     *
+     * @return array|null The relation info, if it exists.
+     *
+     */
+    public function lookUpAllRelations($relation_name)
+    {
+        return $this->lookUpRelationToMapper($relation_name, 'relations');
+    }
+
+    /**
+     *
+     * Looks up a relation by name in the relation_to_mapper map. If there is none, returns null.
+     *
+     * @param string $relation_name The relation to look up
+     *
+     * @return array|null The relation info, if it exists.
+     *
+     */
+    public function lookUpMapper($relation_name)
+    {
+        return $this->lookUpRelationToMapper($relation_name, 'mapper');
+    }
+
+    /**
+     *
+     * Looks up a relation by name. If there is none, returns null.
+     *
+     * @param string $property_address The relation to look up
+     *
+     * @return obj|null The mapper & field declaration, if it exists
+     *
+     */
+    public function lookUpProperty($property_address)
+    {
+        $property_map = $this->getPropertyMap();
+        if (isset($property_map[$property_address])) {
+            return $this->separateMapperFromField($property_map[$property_address]);
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -174,15 +266,18 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      * @param string $property_address The address to split
      *
+     * @param bool $use_root_relation_address Whether or not to use the root relation address instead of '' in single
+     * segment property addresses.
+     *
      * @return \StdClass A StdObject with an 'address' and 'property' property.
      *
      */
-    protected function separatePropertyFromAddress($property_address)
+    public function separatePropertyFromAddress($property_address, $use_root_relation_address = true)
     {
         $address_segments = $this->splitStringOnLast(
             $this->address_delimiter,
             $property_address,
-            $this->root_relation_address
+            $use_root_relation_address?$this->root_relation_address:''
         );
 
         $output = new \StdClass();
@@ -205,7 +300,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      * describe both a mapper AND a field.
      *
      */
-    protected function separateMapperFromField($mapper_address)
+    public function separateMapperFromField($mapper_address)
     {
         if (strpos($mapper_address, $this->address_delimiter) === false) {
             throw new Exception('No mapper declared in mapper address.');
@@ -218,6 +313,25 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
         $output->field  = $address_segments[1];
 
         return $output;
+    }
+
+    /**
+     *
+     * Joins multiple segments by the delimiter.
+     *
+     * @param ...string|array $pieces Either an array of segments to join by delimiter, or a repeating list of strings.
+     *
+     * @return string
+     *
+     */
+    public function joinAddress($pieces)
+    {
+        return implode($this->address_delimiter, is_array($pieces) ? $pieces : func_get_args());
+    }
+
+    public function getRelationByProperty($property_address)
+    {
+        return $this->separatePropertyFromAddress($property_address)->address;
     }
 
     /**
@@ -240,7 +354,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
     {
         $segments = explode($delimiter, $string);
         $last = array_pop($segments);
-        $first = implode($delimiter, $segments);
+        $first = $this->joinAddress($segments);
 
         if ($first === '') {
             $first = $prependIfNoDelimiter;
