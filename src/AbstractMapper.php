@@ -409,12 +409,17 @@ abstract class AbstractMapper implements MapperInterface
      * Returns a new Select query from the gateway, with field names mapped
      * as aliases on the underlying column names.
      *
+     * @param array|null $fields the fields to select. Selects all fields by default
+     *
      * @return Select
      *
      */
-    public function select()
+    public function select(array $fields = null)
     {
-        return $this->gateway->select();
+        if ($fields === null) {
+            $fields = $this->getColsAsFields();
+        }
+        return $this->gateway->select($fields);
     }
 
     /**
