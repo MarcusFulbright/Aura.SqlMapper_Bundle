@@ -197,6 +197,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             'task.type'
         );
         $complexMap = $complexMapper->getRelationToMapper();
+        $relationMap = $complexMapper->getRelationMap();
 
         $this->assertTrue(
             $this->mapsMatch(
@@ -213,15 +214,18 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'building',
-                                'other_side' => 'building'
+                                'other_side' => 'building',
+                                'details' => $relationMap['building']
                             ),
                             array(
                                 'relation_name' => 'task',
-                                'other_side' => 'task'
+                                'other_side' => 'task',
+                                'details' => $relationMap['task']
                             ),
                             array(
                                 'relation_name' => 'floor',
-                                'other_side' => 'floor'
+                                'other_side' => 'floor',
+                                'details' => $relationMap['floor']
                             )
                         )
                     ),
@@ -235,11 +239,13 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'building',
-                                'other_side' => '__root'
+                                'other_side' => '__root',
+                                'details' => $relationMap['building']
                             ),
                             array(
                                 'relation_name' => 'building.type',
-                                'other_side' => 'building.type'
+                                'other_side' => 'building.type',
+                                'details' => $relationMap['building.type']
                             )
                         )
                     ),
@@ -253,7 +259,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'building.type',
-                                'other_side' => 'building'
+                                'other_side' => 'building',
+                                'details' => $relationMap['building.type']
                             )
                         )
                     ),
@@ -266,7 +273,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'floor',
-                                'other_side' => '__root'
+                                'other_side' => '__root',
+                                'details' => $relationMap['floor']
                             )
                         )
                     ),
@@ -281,11 +289,13 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'task',
-                                'other_side' => '__root'
+                                'other_side' => '__root',
+                                'details' => $relationMap['task']
                             ),
                             array(
                                 'relation_name' => 'task.type',
-                                'other_side' => 'task.type'
+                                'other_side' => 'task.type',
+                                'details' => $relationMap['task.type']
                             )
                         )
                     ),
@@ -298,7 +308,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                         'relations' => array(
                             array(
                                 'relation_name' => 'task.type',
-                                'other_side' => 'task'
+                                'other_side' => 'task',
+                                'details' => $relationMap['task.type']
                             )
                         )
                     )
