@@ -10,22 +10,35 @@ namespace Aura\SqlMapper_Bundle;
 class PlaceholderResolver 
 {
     /**
-     * Traverses results to fill in values for place holders. Can probably get optimized a bit more.
      *
-     * @param $value
-     * @param array $results
+     * If necessary,traverses values for place holders and resolves them, otherwise just returns the value.
+     *
+     * @todo Need to teach this to check each value in an array and resolve place holders that are found
+     *
+     * @param mixed $value could potentially have a placeholder
+     *
+     * @param array $data The data-set to resolve place holders against. Rows can be raw array or stdClass
+     *
      * @param AggregateMapperInterface $mapper
-     * @return array|string
+     *
+     * @return array|string the resolved values, or the original value if there was nothing to resolve
+     *
      */
-    public function resolve($value, array $results, AggregateMapperInterface $mapper)
+    public function resolve($value, array $data, AggregateMapperInterface $mapper)
     {
+        if (is_array($value)) {
+            return $value;
+        }
         $has_placeholder = substr($value, 0, 1) === ':';
         $where_in        = array();
         if ($has_placeholder) {
-            $context = $this->getContext($value);
-            foreach ($results[$context->address] as $row_data) {
-                $name = $this->translateField($mapper, $context->propIndex);
-                $where_in[] = $row_data->$name;
+            $prop_address = $mapper->separatePropertyFromAddress(ltrim($value, ':'));
+            foreach ($data[$prop_address->address] as $row) {
+                if ($row instanceof \stdClass) {
+                    $where_in[] = $row->{$prop_address->property};
+                } else{
+                    $where_in[] = $row[$prop_address->property];
+                }
             }
             return $where_in;
         }
@@ -38,19 +51,5 @@ class PlaceholderResolver
             $mapper->getPropertyMap()[$prop_index]
         );
         return $mapper_address->field;
-    }
-
-    protected function getContext($value)
-    {
-        $context          = new \stdClass();
-        $value_pieces     = explode('.', $value);
-        $field            = array_pop($value_pieces);
-        $context->address = ltrim(implode('.', $value_pieces), ':');
-        if ($context->address === '__root') {
-            $context->propIndex = $field;
-        } else {
-            $context->propIndex = $context->address . '.' . $field;
-        }
-        return $context;
     }
 }
