@@ -52,6 +52,14 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
 
     /**
      *
+     * Used to cache the persist order used for this mapper
+     *
+     * @var null|array
+     */
+    protected $persist_order = null;
+
+    /**
+     *
      * Constructor
      *
      * @param ObjectFactoryInterface $object_factory The factory for the
@@ -390,5 +398,27 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
     public function newObject($data)
     {
         return $this->object_factory->newObject($data);
+    }
+
+    /**
+     *
+     * Used to get the Persist Order.
+     *
+     * @return array|null
+     *
+     */
+    public function getPersistOrder()
+    {
+        return $this->persist_order;
+    }
+
+    /**
+     * Used to set the Persist Order.
+     *
+     * @param array $order
+     */
+    public function setPersistOrder(array $order)
+    {
+        $this->persist_order = $order;
     }
 }

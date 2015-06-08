@@ -180,6 +180,16 @@ abstract class AbstractMapper implements MapperInterface
     }
 
     /**
+     * Returns the underlying gateway read connection
+     *
+     * @return ExtendedPdoInterface
+     */
+    public function getReadConnection()
+    {
+        return $this->gateway->getReadConnection();
+    }
+
+    /**
      *
      * Instantiates a new individual object from an array of field data.
      *
@@ -404,8 +414,7 @@ abstract class AbstractMapper implements MapperInterface
      */
     public function select()
     {
-        $cols = $this->getColsAsFields();
-        return $this->gateway->select($cols);
+        return $this->gateway->select();
     }
 
     /**
@@ -413,6 +422,8 @@ abstract class AbstractMapper implements MapperInterface
      * Returns a new Select query from the gateway, with field names mapped
      * as aliases on the underlying column names, for a given column and
      * value(s).
+     *
+     * @param array|null $cols an array of the cols to select. Selects all by default
      *
      * @param string $field The field to use for matching.
      *
@@ -422,10 +433,12 @@ abstract class AbstractMapper implements MapperInterface
      * @return Select
      *
      */
-    public function selectBy($field, $val)
+    public function selectBy($field, $val, $cols = null)
     {
         $col = $this->getColFromField($field);
-        $cols = $this->getColsAsFields();
+        if ($cols === null) {
+            $cols = $this->getColsAsFields();
+        }
         return $this->gateway->selectBy($col, $val, $cols);
     }
 

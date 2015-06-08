@@ -1,9 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-
-use Aura\SqlQuery\Common\Select;
-
 interface AggregateMapperInterface
 {
     /**
@@ -26,4 +23,35 @@ interface AggregateMapperInterface
 
     public function separateMapperFromField($mapper_address);
     public function separatePropertyFromAddress($property_address, $include_root_address = true);
+
+    /**
+     *
+     * Glues together the provided pieces using the appropriate delimiter for a property address
+     *
+     * @param mixed $pieces
+     *
+     * @return string
+     *
+     */
+    public function joinAddress($pieces);
+
+    /**
+     *
+     * Used to get the persist order, returns null if order is not set.
+     *
+     * @return array|null
+     *
+     */
+    public function getPersistOrder();
+
+    /**
+     *
+     * Sets the persist order
+     *
+     * @param array $order
+     *
+     * @return void
+     *
+     */
+    public function setPersistOrder(array $order);
 }
