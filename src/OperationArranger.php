@@ -14,140 +14,139 @@ class OperationArranger
 {
     /**
      *
-     * Returns a list of arrays that represent all of the context to perform a DB operation in the correct execution
-     * order.
+     * Returns an array of context objects describing the dependency tree to resolve the criteria to the root.
      *
-     * @param AggregateMapperInterface $map
+     * @param AggregateMapperInterface $mapper
      *
-     * @param array|null $criteria
+     * @param array $criteria
      *
      * @return array
+     *
      */
-    public function arrangeForSelect(AggregateMapperInterface $map, array $criteria = array())
+    public function getPathToRoot(AggregateMapperInterface $mapper, array $criteria = array())
     {
-        $entry_context = $this->getEntryContext($criteria);
-        return $this->getOrderedOperations($entry_context, $map);
+        $entry_context = $this->getNode($criteria, $mapper);
+        $path[] = $entry_context;
+        $path = $this->traverseRelations($mapper, $entry_context, $path);
+        $seen_root = false;
+        //only return everything up-to and including __root, nothing after
+        return array_filter(
+            $path,
+            function ($node) use (&$seen_root) {
+                switch (true) {
+                    case ($seen_root === false && $node->relation_name === '__root'):
+                        $seen_root = true;
+                    case ($seen_root === false && $node->relation_name !== '__root'):
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        );
     }
 
     /**
-     * Used to determine an entry point into the object graph based on the given criteria
      *
-     * @param $criteria
+     * Returns the path required to navigate from the root to all of the leaf tables
      *
-     * @return \stdClass
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param array $criteria
+     *
+     * @return array
      *
      */
-    protected function getEntryContext(array $criteria)
+    public function getPathFromRoot(AggregateMapperInterface $mapper, array $criteria)
+    {
+        if ($mapper->getPersistOrder() !== null) {
+            return $mapper->getPersistOrder();
+        }
+        $entry_context = $this->getNode($criteria, $mapper);
+        $path[] = $entry_context;
+        $path = $this->traverseRelations($mapper, $entry_context, $path);
+        $mapper->setPersistOrder($path);
+        return $path;
+    }
+
+    protected function traverseRelations(AggregateMapperInterface $mapper, \stdClass $node, &$path, &$seen = array())
+    {
+        $relations = $mapper->lookUpAllRelations($node->relation_name);
+        foreach ($relations as $relation) {
+            $relation_name = $relation['relation_name'];
+            $other_side = $relation['other_side'];
+            if (in_array($relation_name, $seen)) {
+                continue;
+            }
+            $seen[] = $relation_name;
+            $next_relation = $mapper->lookupRelation($relation_name);
+            if ($relation_name === $other_side) {
+                $criteria = $this->fromRoot($next_relation, $relation_name, $mapper);
+            } else {
+                $criteria = $this->fromLeaf($next_relation, $relation_name, $other_side, $mapper);
+            }
+            $node = $this->getNode($criteria, $mapper);
+            $path[] = $node;
+            $this->traverseRelations($mapper, $node, $path, $seen);
+        }
+        return $path;
+    }
+
+    protected function fromRoot($next_relation, $relation_name, AggregateMapperInterface $mapper)
+    {
+        if ($next_relation['owner'] === true) {
+            $ref_field = $next_relation['reference_field'];
+            $key = $mapper->joinAddress($relation_name,  $mapper->separateMapperFromField($ref_field)->field);
+            $relation_pieces = explode('.', $relation_name);
+            if (count($relation_pieces) === 1 ) {
+                $value = $mapper->joinAddress(':__root', $next_relation['join_property']);
+            } else {
+                $value = ':'.$relation_name;
+            }
+        } else {
+            $key = $mapper->joinAddress($relation_name, $next_relation['join_property']);
+            $relation_pieces = explode('.', $relation_name);
+            if (count($relation_pieces) === 1) {
+                $ref_field = $next_relation['reference_field'];
+                $value = $mapper->joinAddress(':__root', $mapper->separateMapperFromField($ref_field)->field);
+            } else {
+                $value = ':'.$relation_name;
+            }
+        }
+        return array($key => $value);
+    }
+
+    protected function fromLeaf($next_relation, $relation_name, $other_side, AggregateMapperInterface $mapper)
+    {
+        if ($next_relation['owner'] === true) {
+            $key = $mapper->joinAddress($other_side, $next_relation['join_property']);
+            $value = $mapper->joinAddress(
+                ':'.$relation_name,
+                $mapper->separateMapperFromField($next_relation['reference_field'])->field
+            );
+        } else {
+            $ref_field = $next_relation['reference_field'];
+            $key = $mapper->joinAddress($other_side, $mapper->separateMapperFromField($ref_field)->field);
+            $value = $mapper->joinAddress(':'.$relation_name, $next_relation['join_property']);
+        }
+        return array($key => $value);
+    }
+
+    protected function getNode(array $criteria, AggregateMapperInterface $mapper)
     {
         $context = new \stdClass();
-        if (! empty($criteria)) {
-            $entry_pieces      = explode('.', key($criteria));
-            $context->field    = array_pop($entry_pieces);
-            $context->property = implode('.', $entry_pieces);
-            $context->value    = current($criteria);
-        } else {
-            $context->property = '__root';
-            $context->value = null;
+        $property_address = $mapper->separatePropertyFromAddress(key($criteria));
+        $context->relation_name = $property_address->address;
+        $context->criteria = array($property_address->property => current($criteria));
+        $context->fields[] = $property_address->property;
+        foreach ($mapper->getRelationToMapper()[$context->relation_name]['relations'] as $relation) {
+                $info = $mapper->getRelationMap()[$relation['relation_name']];
+            if ($info['owner'] === true && $relation['relation_name'] === $context->relation_name) {
+                $field = $mapper->separateMapperFromField($info['reference_field'])->field;
+                if (! in_array($field, $context->fields)) {
+                    $context->fields[] = $field;
+                }
+            }
         }
         return $context;
     }
-
-    /**
-     * Traverses the object map based on the given entry context to build an order of operations
-     *
-     * @param $entry_context
-     *
-     * @param AggregateMapperInterface $map
-     *
-     * @return array
-     */
-    protected function getOrderedOperations($entry_context, AggregateMapperInterface $map)
-    {
-        $relation_to_mapper = $map->getRelationToMapper();
-        $operations = array();
-        $operation  = $relation_to_mapper[$entry_context->property];
-        if ($entry_context->value != null) {
-            $operation['criteria'] = array(
-               $entry_context->field => $entry_context->value
-            );
-        }
-        $operations[$entry_context->property] = $operation;
-        foreach($operation['relations'] as $relation) {
-            $operations = array_merge(
-                $operations,
-                $this->handleRelation($relation, $entry_context->property, $map)
-            );
-        }
-        return $operations;
-    }
-
-    /**
-     * Knows how to build the operation context for a particular relation and will recurse if necessary
-     *
-     * @param $relation
-     * @param $from
-     * @param AggregateMapperInterface $map
-     * @param array $visited
-     * @return array
-     */
-    protected function handleRelation($relation, $from, AggregateMapperInterface $map, &$visited = array())
-    {
-        $relation_to_mapper = $map->getRelationToMapper();
-        $relation_map = $map->getRelationMap();
-        $operations = array();
-        $operation  = $relation_to_mapper[$relation['other_side']];
-        $relation_info = $relation_map[$relation['relation_name']];
-        $criteria = $this->getPlaceHolder($relation_info, $relation, $from, $map);
-        $operation['criteria'] = $criteria;
-        $visited[] = $relation['relation_name'];
-        $operations[$relation['other_side']] = $operation;
-        foreach ($operation['relations'] as $next_relation) {
-            if (in_array($next_relation['relation_name'], $visited)) {
-                continue;
-            }
-            $operations = array_merge(
-                $operations,
-                $this->handleRelation($next_relation, $relation['other_side'], $map, $visited)
-            );
-        }
-        return $operations;
-    }
-
-
-    /**
-     * Determines the criteria for operations further down the chain.
-     *
-     * A key value pair of Name, the aggregates property, and the value, the property address to the values.
-     *
-     * @param $relation_info
-     * @param $relation
-     * @param $from
-     * @param AggregateMapperInterface $map
-     * @return array
-     */
-    protected function getPlaceHolder($relation_info, $relation, $from, AggregateMapperInterface $map)
-    {
-        if ($relation['other_side'] === $relation['relation_name']) {
-            $value = ':' . $from . '.' . $relation_info['reference'];
-            $mapper_address = $map->separateMapperFromField(
-                $map->getPropertyMap()[$relation['relation_name'] . '.'. $relation_info['joinProperty']]
-            );
-        } else {
-            /*
-             * This could be eliminated if AggregateMapper->getPropertyMap included a __root prefix
-             */
-            if ($relation['other_side'] === '__root') {
-                $mapper_address = $map->separateMapperFromField(
-                    $map->getPropertyMap()[$relation_info['reference']]
-                );
-            } else {
-                $mapper_address = $map->separateMapperFromField(
-                    $map->getPropertyMap()[$relation['other_side'] . '.' . $relation_info['reference']]
-                );
-            }
-            $value = ':' . $relation['relation_name'] . '.' . $relation_info['joinProperty'];
-        }
-        $name = $mapper_address->field;
-        return array($name => $value);
-    }
- }
+}
