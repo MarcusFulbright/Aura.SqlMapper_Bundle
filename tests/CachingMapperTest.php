@@ -44,10 +44,11 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
             new Filter()
         );
 
-        $this->mapper = new FakeCachingMapper(
+        $this->mapper = new FakeMapper(
             $this->gateway,
             new ObjectFactory(),
-            new Filter()
+            new Filter(),
+            new RowCache('id')
         );
 
         $this->reflection = new \ReflectionClass($this->mapper);
