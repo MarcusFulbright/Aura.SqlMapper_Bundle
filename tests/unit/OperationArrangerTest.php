@@ -20,208 +20,96 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
         $this->mapper->includeRelation('building', 'building.type', 'floor', 'task', 'task.type');
     }
 
-    public function testArrangeForSelectBuildingType()
+    protected function createStdClass(array $props)
     {
-        $this->assertEquals(
-            array_merge(
-                $this->getBuildingTypeResult(array('code' => 'DE')),
-                $this->getBuildingResult(array('type' => ':building.type.code')),
-                $this->getRootResult(array('building' => ':building.id')),
-                $this->getFloorResult(array('id' => ':__root.floorID')),
-                $this->getTaskResult(array('userid' => ':__root.id')),
-                $this->getTaskTypeResult(array('code' => ':task.typeCode'))
-            ),
-            $this->resolver->arrangeForSelect($this->mapper, array('building.type.code' => 'DE'))
-        );
-    }
-
-    public function testArrangeForSelectBuilding()
-    {
-        $this->assertEquals(
-            array_merge(
-                $this->getBuildingResult(array('name' => 'batman')),
-                $this->getBuildingTypeResult(array('code' => ':building.typeCode')),
-                $this->getRootResult(array('building' => ':building.id')),
-                $this->getFloorResult(array('id' => ':__root.floorID')),
-                $this->getTaskResult(array('userid' => ':__root.id')),
-                $this->getTaskTypeResult(array('code' => ':task.typeCode'))
-            ),
-            $this->resolver->arrangeForSelect($this->mapper, array('building.name' => 'batman'))
-        );
-    }
-
-    public function testArrangeForSelectFloor()
-    {
-        $this->assertEquals(
-            array_merge(
-                $this->getFloorResult(array('id' => 2)),
-                $this->getRootResult(array('floor' => ':floor.id')),
-                $this->getBuildingResult(array('id' => ':__root.buildingID')),
-                $this->getBuildingTypeResult(array('code' => ':building.typeCode')),
-                $this->getTaskResult(array('userid' => ':__root.id')),
-                $this->getTaskTypeResult(array('code' => ':task.typeCode'))
-            ),
-            $this->resolver->arrangeForSelect($this->mapper, array('floor.id' => 2))
-        );
-    }
-
-    public function testArrangeForSelectNoCriteria()
-    {
-        $this->assertEquals(
-            array_merge(
-                $this->getRootResult(),
-                $this->getBuildingResult(array('id' => ':__root.buildingID')),
-                $this->getBuildingTypeResult(array('code' => ':building.typeCode')),
-                $this->getTaskResult(array('userid' => ':__root.id')),
-                $this->getTaskTypeResult(array('code' => ':task.typeCode')),
-                $this->getFloorResult(array('id' => ':__root.floorID'))
-            ),
-            $this->resolver->arrangeForSelect($this->mapper)
-        );
-    }
-
-    protected function getBuildingTypeResult($criteria)
-    {
-        return array(
-            'building.type' => array(
-                'mapper' => 'aura_test_building_typeref',
-                'fields' => array(
-                    0 => 'id',
-                    1 => 'code',
-                    2 => 'decode'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'building.type',
-                        'other_side' => 'building'
-                    )
-                ),
-                'criteria' => $criteria
-            )
-        );
-    }
-
-    protected function getBuildingResult($criteria)
-    {
-        return array(
-            'building' => array(
-                'mapper' => 'aura_test_building',
-                'fields' => array(
-                    0 => 'id',
-                    1 => 'name',
-                    2 => 'type'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'building',
-                        'other_side' => '__root'
-                    ),
-                    1 => array(
-                        'relation_name' => 'building.type',
-                        'other_side' => 'building.type'
-                    )
-                ),
-                'criteria' => $criteria
-            )
-        );
-    }
-
-    protected function getRootResult($criteria = null)
-    {
-        $result = array(
-            '__root' => array(
-                'mapper' => 'aura_test_table',
-                'fields' => array(
-                    0 => 'id',
-                    1 => 'name',
-                    2 => 'building',
-                    3 => 'floor'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'building',
-                        'other_side' => 'building'
-                    ),
-                    1 => array(
-                        'relation_name' => 'floor',
-                        'other_side' => 'floor'
-                    ),
-                    2 => array(
-                        'relation_name' => 'task',
-                        'other_side' => 'task'
-                    )
-                ),
-            )
-        );
-        if (isset($criteria)) {
-            $result['__root']['criteria'] = $criteria;
+        $obj = new \stdClass();
+        foreach ($props as $prop => $value) {
+            $obj->$prop = $value;
         }
-        return $result;
+        return $obj;
     }
 
-    protected function getFloorResult($criteria)
+    public function testGetPathToRoot()
     {
-        return array(
-            'floor' => array(
-                'mapper' => 'aura_test_floor',
-                'fields' => array(
-                    0 => 'id',
-                    1 => 'name'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'floor',
-                        'other_side' => '__root'
-                    )
-                ),
-                'criteria' => $criteria
-            ),
+        $criteria = array('building.type.code' => 'DE');
+        $expected = array(
+            $this->createStdClass(array(
+                'criteria' => array('code' => 'DE'),
+                'relation_name' => 'building.type',
+                'fields' => array('code')
+            )),
+            $this->createStdClass(array(
+                'criteria' => array('type' => ':building.type.code'),
+                'relation_name' => 'building',
+                'fields' => array('type')
+            )),
+            $this->createStdClass(array(
+                'criteria' => array('building' => ':building.id'),
+                'relation_name' => '__root',
+                'fields' => array('building')
+            ))
         );
+        $this->assertEquals($expected, $this->resolver->getPathToRoot($this->mapper, $criteria));
     }
 
-    protected function getTaskResult($criteria)
+    public function testGetPathToRootNotOwning()
     {
-        return array(
-            'task' => array(
-                'mapper' => 'aura_test_task',
-                'fields' => array(
-                    0 => 'id',
-                    1 => 'userid',
-                    2 => 'name',
-                    3 => 'type'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'task',
-                        'other_side' => '__root'
-                    ),
-                    1 => array(
-                        'relation_name' => 'task.type',
-                        'other_side' => 'task.type'
-                    )
-                ),
-                'criteria' => $criteria
-            )
+        $criteria = array('task.type.code' => 'F');
+        $expected = array(
+            $this->createStdClass(array(
+                'criteria' => array('code' => 'F'),
+                'relation_name' => 'task.type',
+                'fields' => array('code')
+            )),
+            $this->createStdClass(array(
+                'criteria' => array('type' => ':task.type.code'),
+                'relation_name' => 'task',
+                'fields' => array('type', 'userid')
+            )),
+            $this->createStdClass(array(
+                'criteria' => array('id' => ':task.userid'),
+                'relation_name' => '__root',
+                'fields' => array('id')
+            ))
         );
+        $this->assertEquals($expected, $this->resolver->getPathToRoot($this->mapper, $criteria));
     }
 
-    protected function getTaskTypeResult($criteria)
+    public function testGetPathFromRoot()
     {
-        return array(
-            'task.type' => array(
-                'mapper' => 'aura_test_task_typeref',
-                'fields' => array(
-                    0 => 'code',
-                    1 => 'decode'
-                ),
-                'relations' => array(
-                    0 => array(
-                        'relation_name' => 'task.type',
-                        'other_side' => 'task'
-                    )
-                ),
-                'criteria' => $criteria
-            )
+        $criteria = array('__root.id' => 1);
+        $expected = array(
+            $this->createStdClass(array(
+                'relation_name' => '__root',
+                'criteria' => array('id' => 1),
+                'fields' => array('id')
+            )),
+            $this->createStdClass(array(
+                'relation_name' => 'building',
+                'criteria' => array('id' => ':__root.building'),
+                'fields' => array('id')
+            )),
+            $this->createStdClass(array(
+                'relation_name' => 'building.type',
+                'criteria' => array('code' => ':building.type'),
+                'fields' => array('code')
+            )),
+            $this->createStdClass(array(
+                'relation_name' => 'floor',
+                'criteria' => array('id' => ':__root.floor'),
+                'fields' => array('id')
+            )),
+            $this->createStdClass(array(
+                'relation_name' => 'task',
+                'criteria' => array('userid' => ':__root.id'),
+                'fields' => array('userid')
+            )),
+            $this->createStdClass(array(
+                'relation_name' => 'task.type',
+                'criteria' => array('code' => ':task.type'),
+                'fields' => array('code')
+            ))
         );
+        $this->assertEquals($expected, $this->resolver->getPathFromRoot($this->mapper, $criteria));
     }
 }
