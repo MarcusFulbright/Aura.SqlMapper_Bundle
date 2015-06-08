@@ -44,34 +44,74 @@ class DbMediator implements DbMediatorInterface
 
     /**
      *
-     * Creates, organizes, and executes all of the select queries for the mappers touched
-     * by this AggregateMapper based on the provided criteria.
+     * Performs a select statement with optional criteria.
      *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
-     * we are concerned with.
+     * When criteria is present, this method will select primary keys and join properties up to the root table, not the
+     * actual row data objects. After selecting the appropriate info for the root table, all row data objects for the
+     * root will get selected based on their primary keys. This method then uses the relation map and the root row data
+     * objects to crawl through a dependency chain built from the relation map to select all leaf tables.
      *
-     * @param array $criteria The array of criteria the object needs to meet.
+     * @todo Support multiple criteria
+     * @todo possibly clean up the logic in this method, Feels really bulky right now
      *
-     * @return array An array representing the db output, as described by row domains.
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param array $criteria
+     *
+     * @throws Exception\NoSuchMapper
+     *
+     * @return array
      *
      */
     public function select(AggregateMapperInterface $mapper, array $criteria = null)
     {
-        $results = array();
-        $operations = $this->operation_arranger->arrangeForSelect($mapper, $criteria);
-        foreach ($operations as $property => $operation) {
-            $row_mapper = $this->locator->__get($operation['mapper']);
-            if (isset($operation['criteria'])) {
-                $field = key($operation['criteria']);
-                $value = $this->placeholder_resolver->resolve(current($operation['criteria']), $results, $mapper);
-                $results[$property] = $row_mapper->fetchCollectionBy($field, $value);
-            } else {
-                $results[$property] = $row_mapper->fetchCollection(
-                    $row_mapper->select()
-                );
+        $rows = array();
+        $relation_to_mapper = $mapper->getRelationToMapper();
+        $mapper_name = $relation_to_mapper['__root']['mapper'];
+        $row_mapper = $this->locator->__get($mapper_name);
+        $id_field = $row_mapper->getIdentityField();
+        if ($criteria === null) {
+            //no criteria just grab all the root row_data objects
+            $rows['__root'] = $row_mapper->fetchCollection(
+                $row_mapper->select()
+            );
+            foreach ($rows['__root'] as $row) {
+                $where_in[] = $row->$id_field;
             }
+        } else {
+            //get the dependency chain to get back to root from the criteria starting place
+            $path_to_root = $this->operation_arranger->getPathToRoot($mapper, $criteria);
+            $ids = array();
+            //go through each relationship and select the primary key and any used join properties.
+            foreach ($path_to_root as $key => $relation) {
+                $mapper_name = $relation_to_mapper[$relation->relation_name]['mapper'];
+                $row_mapper  = $this->locator->__get($mapper_name);
+                $val         = $this->placeholder_resolver->resolve(current($relation->criteria), $ids, $mapper);
+                $fields      = array_merge($relation->fields, array($row_mapper->getIdentityField()));
+                $query       = $row_mapper->selectBy(key($relation->criteria), $val, $fields);
+                $pdo         = $row_mapper->getWriteConnection();
+                $results     = $pdo->fetchAll($query->__toString(), $query->getBindValues());
+                $ids[$relation->relation_name] = $results;
+            }
+            $where_in = array();
+            //build values in a where_in clause that can be used to select all of the appropriate entries
+            foreach ($ids['__root'] as $row) {
+                $where_in[] = $row[$id_field];
+            }
+            //select all of the root row data objects
+            $rows['__root'] = $row_mapper->fetchCollectionBy($id_field, $where_in);
         }
-        return $results;
+        //get the tree that can be used to build out an aggregate object starting at the root
+        $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, array('__root'.'.'.$id_field=>$where_in));
+        //loop over each relationship in this path and select row data objects with the appropriate criteria
+        foreach ($path_from_root as $relation) {
+            $where_in = $this->placeholder_resolver->resolve(current($relation->criteria), $rows, $mapper);
+            $field = key($relation->criteria);
+            $mapper_name = $relation_to_mapper[$relation->relation_name]['mapper'];
+            $row_mapper = $this->locator->__get($mapper_name);
+            $rows[$relation->relation_name] = $row_mapper->fetchCollectionBy($field, $where_in);
+        }
+        return $rows;
     }
 
     /**
@@ -81,14 +121,56 @@ class DbMediator implements DbMediatorInterface
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
-     * @param array $object The instance of the object we want to create.
+     * @param object $object The instance of the object we want to create.
      *
      * @return bool Whether or not this operation was successful.
      *
      */
     public function create(AggregateMapperInterface $mapper, $object)
     {
+        if ($mapper->getPersistOrder === null) {
+            $mapper->setPersistOrder($this->operation_arranger->getPersistOrder($mapper, $object));
+        }
+        /**
+         * array(
+         *    'building.type'
+         *    'building'
+         *    'floor'
+         *    '__root'
+         *    'task.type'
+         *    'task'
+         * )
+         */
+        $order = $mapper->getPersistOrder();
 
+        /**
+         * array (
+         *     'building.type' => array (
+         *         'aura_test_building_typeref' => array(
+         *              uuid => $data,
+         *         )
+         *     )
+         * )
+         *
+         * :relation_name.mapper_name.uuid.field
+         * :building.type:aura_test_building_type:uuid:code
+         *
+         */
+        $relation_list = $this->extractor->extract($object, $mapper);
+
+        foreach ($relation_list as $relation => $mappers) {
+            foreach ($mappers as $mapper_name => $rows) {
+                $mapper = $this->locator->__get($mapper_name);
+                foreach ($rows as $row) {
+                    $has_placeholder = $this->checkPlaceHolder($row);
+                    if ($has_placeholder) {
+                        //resolve placeholder
+                    }
+                    //see if cached
+                    //do the right thing
+                }
+            }
+        }
     }
 
     /**

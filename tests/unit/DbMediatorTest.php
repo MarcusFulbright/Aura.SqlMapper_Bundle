@@ -83,7 +83,6 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
                 'decode' => 'decode'
             ]
         ]
-
     ];
 
     protected function setUp()
@@ -148,55 +147,171 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
         return $obj;
     }
 
-    public function testSuccess()
+    public function testSelectWithWhereLeafOwns()
     {
         $expected = array(
-            'task' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'userid' => 1,
-                    'name' => 'Manage Calendar',
-                    'type' => 'S')
-            )),
-            '__root' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'name' => 'Anna',
-                    'building' => 1,
-                    'floor' => 1
-                )
-            )),
-            'building' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'name' => 'Bower Street',
-                    'type' => 'NP'
-                )
-            )),
-            'building.type' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'code' => 'NP',
-                    'decode' => 'Non-Profit'
-                )
-            )),
-            'floor' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'name' => 'Reception'
-                )
-            )),
-            'task.type' => array($this->createStdClass(
-                array(
-                    'id' => 1,
-                    'code' => 'S',
-                    'decode' => 'Scheduling'
-                )
-            ))
+            '__root' => array($this->createStdClass(array(
+                'id' => 2,
+                'name' => 'Betty',
+                'building' => 1,
+                'floor' => 2
+            ))),
+            'building' => array($this->createStdClass(array(
+                'id' => 1,
+                'name' => 'Bower Street',
+                'type' => 'NP'
+            ))),
+            'building.type' => array($this->createStdClass(array(
+                'id' => 1,
+                'code' => 'NP',
+                'decode' => 'Non-Profit'
+            ))),
+            'floor' => array($this->createStdClass(array(
+                'id' => 2,
+                'name' => 'Accounting'
+            ))),
+            'task' => array(
+                $this->createStdClass(array(
+                    'id' => 3,
+                    'userid' => 2,
+                    'name' => 'Budget Planning',
+                    'type' => 'F'
+                )),
+                $this->createStdClass(array(
+                    'id' => 4,
+                    'userid' => 2,
+                    'name' => 'Budget Meeting',
+                    'type' => 'M'
+                ))
+            ),
+            'task.type' => array(
+                $this->createStdClass(array(
+                    'id' => 3,
+                    'code' => 'F',
+                    'decode' => 'Financials'
+                )),
+                $this->createStdClass(array(
+                    'id' => 4,
+                    'code' => 'M',
+                    'decode' => 'Meeting'
+                ))
+            )
         );
         $this->assertEquals(
             $expected,
-            $this->mediator->select($this->aggregate_mapper, array('task.type' => 'S'))
+            $this->mediator->select($this->aggregate_mapper, array('task.type.code' => 'F'))
         );
+    }
+
+    public function testSelectWhereRootOwns()
+    {
+        $expected = array(
+            '__root' => array(
+                $this->createStdClass(array(
+                    'id' => '3',
+                    'name' => 'Clara',
+                    'building' => '1',
+                    'floor' => '3'
+                )),
+                $this->createStdClass(array(
+                    'id' => '6',
+                    'name' => 'Fiona',
+                    'building' => '1',
+                    'floor' => '3'
+                )),
+                $this->createStdClass(array(
+                    'id' => '9',
+                    'name' => 'Ione',
+                    'building' => '2',
+                    'floor' => '3'
+                )),
+                $this->createStdClass(array(
+                    'id' => '12',
+                    'name' => 'Lana',
+                    'building' => '2',
+                    'floor' => 3
+                ))
+            ),
+            'building' => array(
+                $this->createStdClass(array(
+                    'id' => '1',
+                    'name' => 'Bower Street',
+                    'type' => 'NP'
+                )),
+                $this->createStdClass(array(
+                    'id' => '2',
+                    'name' => 'Dominion',
+                    'type' => 'P'
+                ))
+            ),
+            'building.type' => array(
+                $this->createStdClass(array(
+                    'id' => 1,
+                    'code' => 'NP',
+                    'decode' => 'Non-Profit'
+                )),
+                $this->createStdClass(array(
+                    'id' => 2,
+                    'code' => 'P',
+                    'decode' => 'For Profit'
+                ))
+            ),
+            'floor' => array(
+                $this->createStdClass(array(
+                    'id' => 3,
+                    'name' => 'Marketing'
+                ))
+            ),
+            'task' => array(),
+            'task.type' => array()
+        );
+        $this->assertEquals($expected, $this->mediator->select($this->aggregate_mapper, array('floor.id' => '3')));
+    }
+
+    public function testSelectCriteriaOnRoot()
+    {
+        $criteria = array('__root.id' => 3);
+        $expected = array(
+            '__root' => array($this->createStdClass(array(
+                'id' => '3',
+                'name' => 'Clara',
+                'building' => '1',
+                'floor' => '3'
+            ))),
+            'building' => array($this->createStdClass(array(
+                'id' => '1',
+                'name' => 'Bower Street',
+                'type' => 'NP'
+            ))),
+            'building.type' => array($this->createStdClass(array(
+                'id' => 1,
+                'code' => 'NP',
+                'decode' => 'Non-Profit'
+            ))),
+            'floor' => array($this->createStdClass(array(
+                'id' => 3,
+                'name' => 'Marketing'
+            ))),
+            'task' => array(),
+            'task.type' => array(),
+        );
+        $this->assertEquals($expected, $this->mediator->select($this->aggregate_mapper, $criteria));
+    }
+
+    public function testSelectNoCriteria()
+    {
+        $results = $this->mediator->select($this->aggregate_mapper);
+        $this->assertArrayHasKey('__root', $results);
+        $this->assertCount(12, $results['__root']);
+        $this->assertArrayHasKey('building', $results);
+        $this->assertCount(2, $results['building']);
+        $this->assertArrayHasKey('building.type', $results);
+        $this->assertCount(2, $results['building.type']);
+        $this->assertArrayHasKey('floor', $results);
+        $this->assertCount(3, $results['floor']);
+        $this->assertArrayHasKey('task', $results);
+        $this->assertCount(6, $results['task']);
+        $this->assertArrayHasKey('task.type', $results);
+        $this->assertCount(4, $results['task.type']);
     }
 }
