@@ -209,4 +209,13 @@ interface MapperInterface
      *
      */
     public function delete($object);
+
+    /**
+     *
+     * Returns the $cache object, if it is set.
+     *
+     * @return RowCacheInterface|null
+     *
+     */
+    public function getRowCache();
 }
