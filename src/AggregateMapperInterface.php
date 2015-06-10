@@ -20,6 +20,4 @@ interface AggregateMapperInterface
     public function newCollection($data);
     public function newObject($data);
 
-    public function getRowCache();
-
 }
