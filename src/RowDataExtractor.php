@@ -47,8 +47,9 @@ class RowDataExtractor {
         if (property_exists($mapper, 'persist_order')) {
             $relation_to_mapper = $mapper->getRelationToMapper();
             $persist_order = $mapper->getPersistOrder();
-            foreach ($persist_order as $relation_address) {
-                $output [$relation_address] = array($relation_to_mapper[$relation_address]['mapper'] => array());
+            foreach ($persist_order as $context) {
+                $name = $context->relation_name;
+                $output[$name] = array($relation_to_mapper[$name]['mapper'] => array());
             }
         }
         return $output;

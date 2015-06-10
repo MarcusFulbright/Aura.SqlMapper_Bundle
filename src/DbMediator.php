@@ -28,18 +28,20 @@ class DbMediator implements DbMediatorInterface
      * @param Transaction $transaction
      * @param OperationArranger $operation_arranger
      * @param PlaceholderResolver $placeholder_resolver
-     *
+     * @param RowDataExtractor $extractor
      */
     public function __construct(
         MapperLocator $locator,
         Transaction $transaction,
         OperationArranger $operation_arranger,
-        PlaceholderResolver $placeholder_resolver
+        PlaceholderResolver $placeholder_resolver,
+        RowDataExtractor $extractor
     ) {
         $this->locator              = $locator;
         $this->transaction          = $transaction;
         $this->operation_arranger   = $operation_arranger;
         $this->placeholder_resolver = $placeholder_resolver;
+        $this->extractor            = $extractor;
     }
 
     /**
@@ -128,49 +130,28 @@ class DbMediator implements DbMediatorInterface
      */
     public function create(AggregateMapperInterface $mapper, $object)
     {
-        if ($mapper->getPersistOrder === null) {
-            $mapper->setPersistOrder($this->operation_arranger->getPersistOrder($mapper, $object));
-        }
-        /**
-         * array(
-         *    'building.type'
-         *    'building'
-         *    'floor'
-         *    '__root'
-         *    'task.type'
-         *    'task'
-         * )
-         */
         $order = $mapper->getPersistOrder();
+        if ($order === null) {
+            $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
+            $primary_key = $root_mapper->getIdentityField();
+            $primary_value = $root_mapper->getIdentityValue($object);
+            $criteria = array($primary_key => $primary_value);
+            $order = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
+            $mapper->setPersistOrder($order);
+        }
+        $relation_list = $this->extractor->getRowData($object, $mapper);
 
-        /**
-         * array (
-         *     'building.type' => array (
-         *         'aura_test_building_typeref' => array(
-         *              uuid => $data,
-         *         )
-         *     )
-         * )
-         *
-         * :relation_name.mapper_name.uuid.field
-         * :building.type:aura_test_building_type:uuid:code
-         *
-         */
-        $relation_list = $this->extractor->extract($object, $mapper);
-
-        foreach ($relation_list as $relation => $mappers) {
-            foreach ($mappers as $mapper_name => $rows) {
-                $mapper = $this->locator->__get($mapper_name);
-                foreach ($rows as $row) {
-                    $has_placeholder = $this->checkPlaceHolder($row);
-                    if ($has_placeholder) {
-                        //resolve placeholder
-                    }
-                    //see if cached
-                    //do the right thing
-                }
+        foreach ($relation_list as $mapper => $rows) {
+            $mapper = $this->locator->__get(key($rows));
+            foreach ($rows as $row) {
+                $obj = $mapper->newObject(current($row));
+                $mapper->insert($obj);
             }
         }
+
+//        var_dump($relation_list);
+        die('done');
+
     }
 
     /**

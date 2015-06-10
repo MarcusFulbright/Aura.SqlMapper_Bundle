@@ -134,7 +134,8 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
             $this->mapper_locator,
             new Transaction(),
             new OperationArranger(),
-            new PlaceholderResolver()
+            new PlaceholderResolver(),
+            new RowDataExtractor()
         );
     }
 
@@ -313,5 +314,50 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(6, $results['task']);
         $this->assertArrayHasKey('task.type', $results);
         $this->assertCount(4, $results['task.type']);
+    }
+
+    public function testCreate()
+    {
+        $obj = $this->createStdClass(array(
+            'id' => null,
+            'name' => 'Missy',
+            'building' => $this->createStdClass(array(
+                'id' => 1,
+                'name' => 'Bower Street',
+                'type' => $this->createStdClass(array(
+                    'id' => 1,
+                    'code' => 'NP',
+                    'decode' => 'Non-Profit'
+                )),
+            )),
+            'floor' => $this->createStdClass(array(
+                'id' => 2,
+                'name' => 'Accounting'
+            )),
+            'task' => array(
+                $this->createStdClass(array(
+                    'id' => null,
+                    'userid' => null,
+                    'name' => 'Paycheck Setup',
+                    'type' => $this->createStdClass(array(
+                        'id' => 3,
+                        'code' => 'F',
+                        'decode' => 'Financials'
+                    )),
+                )),
+                $this->createStdClass(array(
+                    'id' => 4,
+                    'userid' => 2,
+                    'name' => 'Budget Meeting',
+                    'type' => $this->createStdClass(array(
+                        'id' => 4,
+                        'code' => 'M',
+                        'decode' => 'Meeting'
+                    ))
+                )),
+            )
+        ));
+        var_dump($this->mediator->create($this->aggregate_mapper, $obj));
+        die();
     }
 }
