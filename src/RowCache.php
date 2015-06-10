@@ -18,7 +18,11 @@ namespace Aura\SqlMapper_Bundle;
  * @package Aura\SqlMapper_Bundle
  *
  */
+<<<<<<< HEAD
 class RowCache
+=======
+class RowCache implements RowCacheInterface
+>>>>>>> aggregate
 {
 
     /**
@@ -62,9 +66,26 @@ class RowCache
     public function __construct($identity, $time_to_live = 0)
     {
         $this->cache        = new \SplObjectStorage();
+<<<<<<< HEAD
         $this->identity     = $identity;
         $this->time_to_live = $time_to_live;
     }
+=======
+        $this->setIdentity($identity);
+        $this->time_to_live = $time_to_live;
+    }
+    /**
+     *
+     * Setter for identity field
+     *
+     * @param string $identity The property name, as a string, that represents the
+     * primary identity.
+     *
+     */
+    public function setIdentity($identity) {
+        $this->identity = $identity;
+    }
+>>>>>>> aggregate
 
     /**
      *
@@ -90,11 +111,20 @@ class RowCache
      *
      * @throws \Exception If provided row does not have the appropriate identity field.
      *
+<<<<<<< HEAD
+=======
+     * @return bool
+     *
+>>>>>>> aggregate
      */
     public function set($row)
     {
         $this->removeCachedVersion($row);
         $this->cache->attach(clone $row, time());
+<<<<<<< HEAD
+=======
+        return true;
+>>>>>>> aggregate
     }
 
     /**
@@ -153,7 +183,11 @@ class RowCache
      *
      * Ensures that the provided row object has a valid identity field.
      *
+<<<<<<< HEAD
      * @param $row The row to check.
+=======
+     * @param mixed $row The row to check.
+>>>>>>> aggregate
      *
      * @throws \Exception If row does not have the appropriate identity field.
      *

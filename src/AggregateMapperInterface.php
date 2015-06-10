@@ -54,4 +54,5 @@ interface AggregateMapperInterface
      *
      */
     public function setPersistOrder(array $order);
+    public function getRowCache();
 }
