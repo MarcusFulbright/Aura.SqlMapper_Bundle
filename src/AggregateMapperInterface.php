@@ -86,7 +86,6 @@ interface AggregateMapperInterface
      *
      */
     public function lookUpAllRelations($relation_name);
-    public function lookUpMapper($relation_name);
 
     /**
      *
