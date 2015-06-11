@@ -180,8 +180,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                     '__root' => array(
                         'mapper' => 'aura_test_table',
                         'fields' => array(
-                            'id',
-                            'name'
+                            'id' => 'id',
+                            'name' => 'name'
                         ),
                         'relations' => array()
                     )
@@ -206,69 +206,69 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                     '__root' => array(
                         'mapper' => 'aura_test_table',
                         'fields' => array(
-                            'id',
-                            'name',
-                            'building',
-                            'floor'
+                            'id'        => 'id',
+                            'name'      => 'name',
+                            'building'  => null,
+                            'floor'     => null
                         ),
                         'relations' => array(
                             array(
                                 'relation_name' => 'building',
-                                'other_side' => 'building',
-                                'details' => $relationMap['building']
+                                'other_side'    => 'building',
+                                'details'       => $relationMap['building']
                             ),
                             array(
                                 'relation_name' => 'task',
-                                'other_side' => 'task',
-                                'details' => $relationMap['task']
+                                'other_side'    => 'task',
+                                'details'       => $relationMap['task']
                             ),
                             array(
                                 'relation_name' => 'floor',
-                                'other_side' => 'floor',
-                                'details' => $relationMap['floor']
+                                'other_side'    => 'floor',
+                                'details'       => $relationMap['floor']
                             )
                         )
                     ),
                     'building' => array(
                         'mapper' => 'aura_test_building',
                         'fields' => array(
-                            'id',
-                            'name',
-                            'type'
+                            'id'   => 'id',
+                            'name' => 'name',
+                            'type' => null
                         ),
                         'relations' => array(
                             array(
                                 'relation_name' => 'building',
-                                'other_side' => '__root',
-                                'details' => $relationMap['building']
+                                'other_side'    => '__root',
+                                'details'   => $relationMap['building']
                             ),
                             array(
                                 'relation_name' => 'building.type',
-                                'other_side' => 'building.type',
-                                'details' => $relationMap['building.type']
+                                'other_side'    => 'building.type',
+                                'details'       => $relationMap['building.type']
                             )
                         )
                     ),
                     'building.type' => array(
                         'mapper' => 'aura_test_building_typeref',
                         'fields' => array(
-                            'id',
-                            'code',
-                            'decode'
+                            'id'     => 'id',
+                            'code'   => 'code',
+                            'decode' => 'decode'
                         ),
                         'relations' => array(
                             array(
                                 'relation_name' => 'building.type',
-                                'other_side' => 'building',
-                                'details' => $relationMap['building.type']
+                                'other_side'    => 'building',
+                                'details'       => $relationMap['building.type']
                             )
                         )
                     ),
                     'floor' => array(
                         'mapper' => 'aura_test_floor',
                         'fields' => array(
-                            'id',
-                            'name'
+                            'id'   => 'id',
+                            'name' => 'name'
                         ),
                         'relations' => array(
                             array(
@@ -281,10 +281,10 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                     'task' => array(
                         'mapper' => 'aura_test_task',
                         'fields' => array(
-                            'id',
-                            'userid',
-                            'name',
-                            'type'
+                            'id' => 'id',
+                            'userid' => null,
+                            'name' => 'name',
+                            'type' => null
                         ),
                         'relations' => array(
                             array(
@@ -302,8 +302,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                     'task.type' => array(
                         'mapper' => 'aura_test_task_typeref',
                         'fields' => array(
-                            'code',
-                            'decode'
+                            'code' => 'code',
+                            'decode' => 'decode'
                         ),
                         'relations' => array(
                             array(
@@ -435,8 +435,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             '__root' => array(
                 'mapper' => 'mapper',
                 'fields' => array(
-                    'propOne',
-                    'propTwo'
+                    'propOne' => 'propertyOne',
+                    'propTwo' => 'propertyTwo'
                 ),
                 'relations' => array(
                     array(
@@ -448,8 +448,8 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             'embedded' => array(
                 'mapper' => 'secondMapper',
                 'fields' => array(
-                    'embeddedPropOne',
-                    'embeddedPropTwo'
+                    'embeddedPropOne' => 'propertyOne',
+                    'embeddedPropTwo' => null
                 ),
                 'relations' => array(
                     array(
