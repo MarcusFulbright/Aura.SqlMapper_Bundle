@@ -93,7 +93,9 @@ class RowDataExtractor {
             }
 
             foreach ($relation as $next_object) {
-                $this->iterateOverProperties($next_object, $mapper, $relation_address, $output);
+                if($next_object !== null) {
+                    $this->iterateOverProperties($next_object, $mapper, $relation_address, $output);
+                }
             }
         }
 

@@ -360,6 +360,16 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->compareResults($results, $this->expected_results);
     }
 
+    public function testHandlesNullSubObjects()
+    {
+        $this->aggregate_domain->branch = null;
+        unset($this->expected_results['branch']);
+        unset($this->expected_results['branch.leaf']);
+
+        $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
+        $this->compareResults($results, $this->expected_results);
+    }
+
     protected function compareResults($results, $expected, $persist_order = null) {
         $i = 0;
         if ($persist_order !== null) {
