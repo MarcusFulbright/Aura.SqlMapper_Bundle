@@ -78,7 +78,7 @@ class UnitOfWorkTest extends \PHPUnit_Framework_TestCase
     public function testUpdate()
     {
         // get the object
-        $object = $this->mapper->fetchObjectBy('name', 'Anna');
+        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
 
         // modify it and attach for update
         $object->firstName = 'Annabelle';
@@ -101,7 +101,7 @@ class UnitOfWorkTest extends \PHPUnit_Framework_TestCase
     public function testDelete()
     {
         // get the object
-        $object = $this->mapper->fetchObjectBy('name', 'Anna');
+        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
 
         // attach for delete
         $this->work->delete('fake', $object);
@@ -161,12 +161,12 @@ class UnitOfWorkTest extends \PHPUnit_Framework_TestCase
         $this->work->insert('fake', $coll[0]);
 
         // update
-        $coll[1] = $this->mapper->fetchObjectBy('name', 'Anna');
+        $coll[1] = $this->mapper->fetchObjectBy('firstName', 'Anna');
         $coll[1]->firstName = 'Annabelle';
         $this->work->update('fake', $coll[1]);
 
         // delete
-        $coll[2] = $this->mapper->fetchObjectBy('name', 'Betty');
+        $coll[2] = $this->mapper->fetchObjectBy('firstName', 'Betty');
         $this->work->delete('fake', $coll[2]);
 
         // execute

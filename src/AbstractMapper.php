@@ -62,6 +62,25 @@ abstract class AbstractMapper implements MapperInterface
 
     /**
      *
+     * The getColsFields map inverted.
+     *
+     * $var array
+     *
+     *
+     */
+    protected $fields_cols;
+
+    /**
+     *
+     * The piece that handles caching.
+     *
+     * @var RowCacheInterface
+     *
+     */
+    protected $cache;
+
+    /**
+     *
      * Constructor.
      *
      * @param GatewayInterface $gateway A row data gateway.
@@ -70,15 +89,31 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param FilterInterface $filter A filter for inserts and updates.
      *
+     * @param RowCacheInterface $cache
+     *
      */
     public function __construct(
         GatewayInterface $gateway,
         ObjectFactoryInterface $object_factory,
-        FilterInterface $filter
+        FilterInterface $filter,
+        RowCacheInterface $cache = null
     ) {
         $this->gateway = $gateway;
         $this->object_factory = $object_factory;
         $this->filter = $filter;
+        $this->cache = $cache;
+    }
+
+    /**
+     *
+     * Getter for the RowCache object.
+     *
+     * @return RowCacheInterface
+     *
+     */
+    public function getRowCache()
+    {
+        return $this->cache;
     }
 
     /**
@@ -92,6 +127,20 @@ abstract class AbstractMapper implements MapperInterface
 
     /**
      *
+     * Returns the map of field names to column names.
+     *
+     * @return array
+     *
+     */
+    public function getFieldsCols() {
+        if (! isset($this->fields_cols)) {
+            $this->fields_cols = array_flip($this->getColsFields());
+        }
+        return $this->fields_cols;
+    }
+
+    /**
+     *
      * Returns the name of the identity field on the object.
      *
      * @return array
@@ -99,7 +148,7 @@ abstract class AbstractMapper implements MapperInterface
      */
     public function getIdentityField()
     {
-        return $this->gateway->getPrimaryCol();
+        return $this->getFieldFromCol($this->gateway->getPrimaryCol());
     }
 
     /**
@@ -185,18 +234,62 @@ abstract class AbstractMapper implements MapperInterface
 
     /**
      *
+     * Adds a not-in clause to the select query.
+     *
+     * @param Select $select
+     *
+     * @param array $ids
+     *
+     * @return Select
+     *
+     */
+    protected function excludeIdsFromSelect(Select $select, $ids)
+    {
+        return $this->gateway->excludeValues($select, $this->gateway->getPrimaryCol(), $ids);
+    }
+
+    /**
+     *
+     * Performs a cache query if we are caching and returns the results object. Otherwise returns null.
+     *
+     * @param string $field The field to look up.
+     *
+     * @param mixed $val The value to compare it to.
+     *
+     * @return null|object
+     *
+     */
+    protected function getFromCache($field, $val) {
+        if ($this->cache === null) {
+            return null;
+        } else {
+            return $this->cache->queryCache($field, $val);
+        }
+    }
+
+    /**
+     *
      * Returns an individual object from the gateway using a Select.
      *
      * @param Select $select Select statement for the individual object.
      *
+     * @param array $exclude_ids If set, will add a not in clause to the query.
+     *
      * @return object|false
      *
      */
-    public function fetchObject(Select $select)
+    public function fetchObject(Select $select, array $exclude_ids = null)
     {
+        if ($exclude_ids) {
+            $this->excludeIdsFromSelect($select, $exclude_ids);
+        }
         $row = $this->gateway->fetchRow($select);
         if ($row) {
-            return $this->newObject($row);
+            $obj = $this->newObject($row);
+            if ($this->cache !== null) {
+                $this->cache->set($obj);
+            }
+            return $obj;
         }
         return false;
     }
@@ -206,7 +299,7 @@ abstract class AbstractMapper implements MapperInterface
      * Returns an individual object from the gateway, for a given column and
      * value.
      *
-     * @param string $col The column to use for matching.
+     * @param string $field The field to use for matching.
      *
      * @param mixed $val The value to match against; this can be an array
      * of values.
@@ -214,9 +307,13 @@ abstract class AbstractMapper implements MapperInterface
      * @return object|false
      *
      */
-    public function fetchObjectBy($col, $val)
+    public function fetchObjectBy($field, $val)
     {
-        $select = $this->selectBy($col, $val);
+        $results = $this->getFromCache($field, $val);
+        if ($results && $results->results) {
+            return $results->results[0];
+        }
+        $select = $this->selectBy($field, $val);
         return $this->fetchObject($select);
     }
 
@@ -229,16 +326,24 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param mixed $field Key the array on the values of this object field.
      *
+     * @param array $exclude_ids If set, will add a not in clause to the query.
+     *
      * @return array
      *
      */
-    public function fetchObjects(Select $select, $field)
+    public function fetchObjects(Select $select, $field, array $exclude_ids = null)
     {
+        if ($exclude_ids) {
+            $select = $this->excludeIdsFromSelect($select, $exclude_ids);
+        }
         $rows = $select->fetchAll();
         $objects = array();
         foreach ($rows as $row) {
             $key = $row[$field];
             $objects[$key] = $this->newObject($row);
+            if ($this->cache) {
+                $this->cache->set($objects[$key]);
+            }
         }
         return $objects;
     }
@@ -249,20 +354,27 @@ abstract class AbstractMapper implements MapperInterface
      * column and value(s); the array is keyed on the values of a specified
      * object field.
      *
-     * @param string $col The column to use for matching.
+     * @param string $field The field to use for matching.
      *
      * @param mixed $val The value to match against; this can be an array
      * of values.
      *
-     * @param mixed $field Key the array on the values of this object field.
+     * @param mixed $key_field Key the array on the values of this object field.
      *
      * @return object|false
      *
      */
-    public function fetchObjectsBy($col, $val, $field)
+    public function fetchObjectsBy($field, $val, $key_field)
     {
-        $select = $this->selectBy($col, $val);
-        return $this->fetchObjects($select, $field);
+        $cached  = $this->getFromCache($field, $val);
+        $select  = $this->selectBy($field, $val);
+        $results = $this->fetchObjects($select, $key_field, $cached?$cached->ids:null);
+        if ($cached) {
+            foreach ($cached->results as $row) {
+                $results[$row->$field] = $row;
+            }
+        }
+        return $results;
     }
 
     public function pickFromObjects(array $objects, $val)
@@ -280,14 +392,25 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param Select $select Select statement for the collection.
      *
+     * @param array $exclude_ids If set, will add a not in clause to the query.
+     *
      * @return object|array
      *
      */
-    public function fetchCollection(Select $select)
+    public function fetchCollection(Select $select, array $exclude_ids = null)
     {
+        if ($exclude_ids) {
+            $this->excludeIdsFromSelect($select, $exclude_ids);
+        }
         $rows = $this->gateway->fetchRows($select);
         if ($rows) {
-            return $this->newCollection($rows);
+            $collection = $this->newCollection($rows);
+            if ($this->cache) {
+                foreach ($collection as $row) {
+                    $this->cache->set($row);
+                }
+            }
+            return $collection;
         }
         return array();
     }
@@ -296,7 +419,7 @@ abstract class AbstractMapper implements MapperInterface
      *
      * Returns a collection from the gateway, for a given column and value(s).
      *
-     * @param string $col The column to use for matching.
+     * @param string $field The field to use for matching.
      *
      * @param mixed $val The value to match against; this can be an array
      * of values.
@@ -304,10 +427,17 @@ abstract class AbstractMapper implements MapperInterface
      * @return object|array
      *
      */
-    public function fetchCollectionBy($col, $val)
+    public function fetchCollectionBy($field, $val)
     {
-        $select = $this->selectBy($col, $val);
-        return $this->fetchCollection($select);
+        $cached  = $this->getFromCache($field, $val);
+        $select  = $this->selectBy($field, $val);
+        $results = $this->fetchCollection($select, $cached?$cached->ids:null);
+        if ($cached) {
+            foreach ($cached->results as $row) {
+                $results[] = $row;
+            }
+        }
+        return $results;
     }
 
     /**
@@ -319,11 +449,17 @@ abstract class AbstractMapper implements MapperInterface
      *
      * @param mixed $field Key the array on the values of this object field.
      *
+     * @param array $exclude_ids If set, will add a not in clause to the query.
+     *
      * @return array
      *
      */
-    public function fetchCollections(Select $select, $field)
+    public function fetchCollections(Select $select, $field, array $exclude_ids = null)
     {
+        if ($exclude_ids) {
+            $this->excludeIdsFromSelect($select, $exclude_ids);
+        }
+
         $rows = $this->gateway->fetchRows($select);
 
         $rowsets = [];
@@ -335,6 +471,11 @@ abstract class AbstractMapper implements MapperInterface
         $collections = [];
         foreach ($rowsets as $key => $rowset) {
             $collections[$key] = $this->newCollection($rowset);
+            if ($this->cache) {
+                foreach ($collections[$key] as $row) {
+                    $this->cache->set($row);
+                }
+            }
         }
 
         return $collections;
@@ -345,20 +486,31 @@ abstract class AbstractMapper implements MapperInterface
      * Returns an array of collections from the gateway, for a given column and
      * value(s); the array is keyed on the values of a specified object field.
      *
-     * @param string $col The column to use for matching.
+     * @param string $field The field to use for matching.
      *
      * @param mixed $val The value to match against; this can be an array
      * of values.
      *
-     * @param mixed $field Key the array on the values of this object field.
+     * @param mixed $key_field Key the array on the values of this object field.
      *
      * @return object|false
      *
      */
-    public function fetchCollectionsBy($col, $val, $field = null)
+    public function fetchCollectionsBy($field, $val, $key_field = null)
     {
-        $select = $this->selectBy($col, $val);
-        return $this->fetchCollections($select, $field);
+        $cached = $this->getFromCache($field, $val);
+        $select = $this->selectBy($field, $val);
+        $fromDB = $this->fetchCollections($select, $key_field, $cached?$cached->ids:null);
+
+        if ($cached) {
+            foreach ($cached->results as $row) {
+                if (!isset($fromDB[$row->$key_field])) {
+                    $fromDB[$row->$key_field] = $this->newCollection();
+                }
+                $fromDB[$row->$key_field][] = $row;
+            }
+        }
+        return $fromDB;
     }
 
     public function pickFromCollections($collections, $val)
@@ -390,7 +542,7 @@ abstract class AbstractMapper implements MapperInterface
      * as aliases on the underlying column names, for a given column and
      * value(s).
      *
-     * @param string $col The column to use for matching.
+     * @param string $field The field to use for matching.
      *
      * @param mixed $val The value(s) to match against; this can be an array
      * of values.
@@ -398,8 +550,9 @@ abstract class AbstractMapper implements MapperInterface
      * @return Select
      *
      */
-    public function selectBy($col, $val)
+    public function selectBy($field, $val)
     {
+        $col = $this->getColFromField($field);
         $cols = $this->getColsAsFields();
         return $this->gateway->selectBy($col, $val, $cols);
     }
@@ -430,6 +583,10 @@ abstract class AbstractMapper implements MapperInterface
             );
         }
 
+        if ($this->cache) {
+            $this->cache->set($object);
+        }
+
         return true;
     }
 
@@ -449,8 +606,18 @@ abstract class AbstractMapper implements MapperInterface
     public function update($object, $initial_data = null)
     {
         $this->filter->forUpdate($object);
-        $data = $this->getRowData($object, $initial_data);
-        return (bool) $this->gateway->update($data);
+        $cached = $this->cache?$this->cache->getCachedData($object):null;
+        $data = $this->getRowData($object, $initial_data?:$cached);
+
+        // No-op and return true if there are no changes.
+        if (array_keys($data) == array($this->gateway->getPrimaryCol())) {
+            return true;
+        }
+
+        if (($results = (bool) $this->gateway->update($data)) && $this->cache) {
+            $this->cache->set($object);
+        }
+        return $results;
     }
 
     /**
@@ -466,7 +633,38 @@ abstract class AbstractMapper implements MapperInterface
     public function delete($object)
     {
         $row = $this->getRowData($object);
-        return (bool) $this->gateway->delete($row);
+        if (($results = (bool) $this->gateway->delete($row)) && $this->cache) {
+            $this->cache->removeCachedVersion($object);
+        }
+        return $results;
+    }
+
+    /**
+     *
+     * Converts a field name into a column name.
+     *
+     * @param string $field The field name to convert into a column name.
+     *
+     * @return string mixed The column name.
+     *
+     */
+    protected function getColFromField($field) {
+        $fields_cols = $this->getFieldsCols();
+        return $fields_cols[$field];
+    }
+
+    /**
+     *
+     * Converts a field name into a column name.
+     *
+     * @param string $col The column name to convert into a field name.
+     *
+     * @return string mixed The field name.
+     *
+     */
+    protected function getFieldFromCol($col) {
+        $cols_fields = $this->getColsFields();
+        return $cols_fields[$col];
     }
 
     /**

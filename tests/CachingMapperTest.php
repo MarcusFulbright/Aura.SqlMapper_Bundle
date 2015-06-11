@@ -8,17 +8,20 @@ use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
 use Aura\SqlMapper_Bundle\SqliteFixture;
 
-class MapperTest extends \PHPUnit_Framework_TestCase
+class CachingMapperTest extends \PHPUnit_Framework_TestCase
 {
     use Assertions;
 
     protected $connections;
     protected $profiler;
     protected $query;
+    protected $gateway;
+    protected $connection_locator;
     protected $gateway_filter;
     protected $mapper_filter;
     protected $object_factory;
     protected $mapper;
+    protected $reflection;
 
     protected function setUp()
     {
@@ -44,14 +47,33 @@ class MapperTest extends \PHPUnit_Framework_TestCase
         $this->mapper = new FakeMapper(
             $this->gateway,
             new ObjectFactory(),
-            new Filter()
+            new Filter(),
+            new RowCache('id')
         );
+
+        $this->reflection = new \ReflectionClass($this->mapper);
 
         $fixture = new SqliteFixture(
             $this->mapper->getWriteConnection(),
             'aura_test_table'
         );
         $fixture->exec();
+    }
+
+    /**
+     *
+     * Returns an accessible ReflectionMethod by name.
+     *
+     * @param string $name The name of the method
+     *
+     * @return \ReflectionMethod
+     *
+     */
+    protected function getProtectedMethod($name)
+    {
+        $method = $this->reflection->getMethod($name);
+        $method->setAccessible(true);
+        return $method;
     }
 
     public function testGetIdentityValue()
@@ -235,12 +257,11 @@ class MapperTest extends \PHPUnit_Framework_TestCase
     {
         // fetch an object, retain its original data, then change it
         $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
-        $initial_data = (array) $object;
         $object->firstName = 'Annabelle';
 
         // update with profiling turned on
         $this->profiler->setActive(true);
-        $affected = $this->mapper->update($object, $initial_data);
+        $affected = $this->mapper->update($object);
         $this->profiler->setActive(false);
 
         // check the profile
@@ -285,6 +306,51 @@ class MapperTest extends \PHPUnit_Framework_TestCase
         ';
         $actual = (string) $select;
         $this->assertSameSql($expect, $actual);
+    }
+
+    public function testExcludeSingleIdFromSelect()
+    {
+        $method = $this->getProtectedMethod('excludeIdsFromSelect');
+        $select = $this->mapper->select();
+        $method->invoke($this->mapper, $select, 13);
+        $expect = '
+            SELECT
+                "aura_test_table"."id" AS "id",
+                "aura_test_table"."name" AS "firstName",
+                "aura_test_table"."building" AS "buildingNumber",
+                "aura_test_table"."floor" AS "floor"
+            FROM
+                "aura_test_table"
+            WHERE
+                "aura_test_table"."id" != :id
+        ';
+        $actual = (string) $select;
+        $this->assertSameSql($expect, $actual);
+    }
+
+    public function testExcludeMultipleIdsFromSelect()
+    {
+        $method = $this->getProtectedMethod('excludeIdsFromSelect');
+        $select = $this->mapper->select();
+        $method->invoke($this->mapper, $select, array(1, 2, 3));
+        $expect = '
+            SELECT
+                "aura_test_table"."id" AS "id",
+                "aura_test_table"."name" AS "firstName",
+                "aura_test_table"."building" AS "buildingNumber",
+                "aura_test_table"."floor" AS "floor"
+            FROM
+                "aura_test_table"
+            WHERE
+                "aura_test_table"."id" NOT IN (:id)
+        ';
+        $actual = (string) $select;
+        $this->assertSameSql($expect, $actual);
+    }
+
+    public function testVarDumpingQueryResults() {
+        $this->mapper->fetchObjectsBy('floor', 1, 'id');
+        $this->mapper->fetchObjectsBy('buildingNumber', 1, 'id');
     }
 
     protected function silenceErrors()
