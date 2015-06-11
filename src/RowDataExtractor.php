@@ -45,10 +45,9 @@ class RowDataExtractor {
     {
         $output = array();
         if (property_exists($mapper, 'persist_order')) {
-            $relation_to_mapper = $mapper->getRelationToMapper();
             $persist_order = $mapper->persist_order;
             foreach ($persist_order as $relation_address) {
-                $output [$relation_address] = array($relation_to_mapper[$relation_address]['mapper'] => array());
+                $output[$relation_address] = (object) array();
             }
         }
         return $output;
@@ -74,7 +73,15 @@ class RowDataExtractor {
         $mapped = $this->getMappedProperties($object, $mapper, $current_address);
 
         $current_relation = $current_address ?: "__root";
-        $output[$current_relation][$mapped->base_mapper][] = &$mapped->base_fields;
+
+        if (!isset($output[$current_relation])) {
+            $output[$current_relation] = new \stdClass();
+        }
+        $output[$current_relation]->mapper = $mapper->lookUpMapper($current_relation);
+        $output[$current_relation]->rows[] = (object) array(
+            'data' => &$mapped->base_fields,
+            'object' => &$object
+        );
 
         $all_relations = $mapper->lookUpAllRelations($current_relation);
         foreach ($all_relations as $relation_info) {
@@ -180,7 +187,7 @@ class RowDataExtractor {
     {
         $index = 0;
         if (isset($output[$join_address])) {
-            $index = count($output[$join_address][$join_mapper_name]) - ($row_has_been_created ? 1 : 0);
+            $index = count($output[$join_address]->rows) - ($row_has_been_created ? 1 : 0);
         }
         return $index;
     }
