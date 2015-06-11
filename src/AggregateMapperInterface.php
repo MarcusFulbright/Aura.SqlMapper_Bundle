@@ -20,6 +20,7 @@ interface AggregateMapperInterface
     public function lookUpRelation($relation_name);
     public function lookUpProperty($property_address);
     public function lookUpAllRelations($relation_name);
+    public function lookUpMapper($relation_name);
 
     public function separateMapperFromField($mapper_address);
     public function separatePropertyFromAddress($property_address, $include_root_address = true);

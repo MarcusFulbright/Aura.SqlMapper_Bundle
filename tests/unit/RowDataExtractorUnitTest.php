@@ -32,16 +32,18 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
 
         $this->expected_results = array(
             '__root' => array(
-                'root' => array(
-                    array(
+                (object) array(
+                    'instance' => $this->aggregate_domain,
+                    'row_data' => array(
                         'id'   => 1,
                         'name' => 'Charles'
                     )
                 )
             ),
             'branch' => array(
-                'branch' => array(
-                    array(
+                (object) array(
+                    'instance' => $this->aggregate_domain->branch,
+                    'row_data' => array(
                         'id'     => 2,
                         'name'   => 'Shirley',
                         'rootid' => ':__root:root:0:id'
@@ -49,8 +51,9 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
                 )
             ),
             'branch.leaf' => array(
-                'leaf' => array(
-                    array(
+                (object) array(
+                    'instance' => $this->aggregate_domain->branch->leaf,
+                    'row_data' => array(
                         'id'       => 3,
                         'name'     => 'Erickson',
                         'branchid' => ':branch:branch:0:id'
@@ -147,10 +150,13 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_domain->branch->leaf[] = $leafTwo;
 
         //Alter expected results with this second leaf
-        $this->expected_results['branch.leaf']['leaf'][] = array(
-            'id' => $leafTwo->leafid,
-            'name' => $leafTwo->leafname,
-            'branchid' => ':branch:branch:0:id'
+        $this->expected_results['branch.leaf'][] = (object) array(
+            'instance' => $leafTwo,
+            'row_data' => array(
+                'id' => $leafTwo->leafid,
+                'name' => $leafTwo->leafname,
+                'branchid' => ':branch:branch:0:id'
+            )
         );
 
         $this->fake_mapper->setPersistOrder(array(
@@ -181,10 +187,13 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_domain->branch->leaf[] = $leafTwo;
 
         //Alter expected results with this second leaf
-        $this->expected_results['branch.leaf']['leaf'][] = array(
-            'id' => $leafTwo->leafid,
-            'name' => $leafTwo->leafname,
-            'branchid' => ':branch:branch:0:id'
+        $this->expected_results['branch.leaf'][] = (object) array(
+            'instance' => $leafTwo,
+            'row_data' => array(
+                'id' => $leafTwo->leafid,
+                'name' => $leafTwo->leafname,
+                'branchid' => ':branch:branch:0:id'
+            )
         );
 
         //Change the branch relationship to has many
@@ -207,17 +216,23 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $branchTwo->leaf = array($leafThree);
 
         //Alter expected results with this second branch
-        $this->expected_results['branch']['branch'][] = array(
-            'id' => $branchTwo->branchid,
-            'name' => $branchTwo->branchname,
-            'rootid' => ':__root:root:0:id'
+        $this->expected_results['branch'][] = (object) array(
+            'instance' => $branchTwo,
+            'row_data' => array(
+                'id' => $branchTwo->branchid,
+                'name' => $branchTwo->branchname,
+                'rootid' => ':__root:root:0:id'
+            )
         );
 
         //Alter expected results with this third leaf
-        $this->expected_results['branch.leaf']['leaf'][] = array(
-            'id' => $leafThree->leafid,
-            'name' => $leafThree->leafname,
-            'branchid' => ':branch:branch:1:id'
+        $this->expected_results['branch.leaf'][] = (object) array(
+            'instance' => $leafThree,
+            'row_data' => array(
+                'id' => $leafThree->leafid,
+                'name' => $leafThree->leafname,
+                'branchid' => ':branch:branch:1:id'
+            )
         );
         $this->fake_mapper->setPersistOrder(array(
             (object)array('relation_name' => '__root'),
@@ -244,8 +259,8 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Alter expected results to include the branchid placeholder on root.
-        unset($this->expected_results['branch']['branch'][0]['rootid']);
-        $this->expected_results['__root']['root'][0]['branchid'] = ':branch:branch:0:id';
+        unset($this->expected_results['branch'][0]->row_data['rootid']);
+        $this->expected_results['__root'][0]->row_data['branchid'] = ':branch:branch:0:id';
 
         $this->fake_mapper->setPersistOrder(array(
             (object)array('relation_name' => '__root'),
@@ -276,19 +291,28 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Change expected output
-        $this->expected_results['__root']['root'][] = array(
-            'name' => 'Willem',
-            'id'   => 2
+        $this->expected_results['__root'][] = (object) array(
+            'instance' => $ad2,
+            'row_data' => array(
+                'name' => 'Willem',
+                'id'   => 2
+            )
         );
-        $this->expected_results['branch']['branch'][] = array(
-            'name' => 'Chuck',
-            'id'   => 42,
-            'rootid'     => ':__root:root:1:id'
+        $this->expected_results['branch'][] = (object) array(
+            'instance' => $ad2->branch,
+            'row_data' => array(
+                'name' => 'Chuck',
+                'id'   => 42,
+                'rootid'     => ':__root:root:1:id'
+            )
         );
-        $this->expected_results['branch.leaf']['leaf'][] = array(
-            'name' => 'Sue',
-            'id'   => 15,
-            'branchid' => ':branch:branch:1:id'
+        $this->expected_results['branch.leaf'][] = (object) array(
+            'instance' => $ad2->branch->leaf,
+            'row_data' => array(
+                'name' => 'Sue',
+                'id'   => 15,
+                'branchid' => ':branch:branch:1:id'
+            )
         );
 
         $this->fake_mapper->setPersistOrder(array(
@@ -316,8 +340,8 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Alter expected results to include the branchid placeholder on root.
-        unset($this->expected_results['branch']['branch'][0]['rootid']);
-        $this->expected_results['__root']['root'][0]['branchid'] = ':branch:branch:0:id';
+        unset($this->expected_results['branch'][0]->row_data['rootid']);
+        $this->expected_results['__root'][0]->row_data['branchid'] = ':branch:branch:0:id';
 
         //Create second root object
         $ad2 = clone $this->aggregate_domain;
@@ -333,19 +357,28 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Change expected output
-        $this->expected_results['__root']['root'][] = array(
-            'name' => 'Willem',
-            'id'   => 2,
-            'branchid' =>':branch:branch:1:id'
+        $this->expected_results['__root'][] = (object) array(
+            'instance' => $ad2,
+            'row_data' => array(
+                'name' => 'Willem',
+                'id'   => 2,
+                'branchid' =>':branch:branch:1:id'
+            )
         );
-        $this->expected_results['branch']['branch'][] = array(
-            'name' => 'Chuck',
-            'id'   => 42
+        $this->expected_results['branch'][] = (object) array(
+            'instance' => $ad2->branch,
+            'row_data' => array(
+                'name' => 'Chuck',
+                'id'   => 42
+            )
         );
-        $this->expected_results['branch.leaf']['leaf'][] = array(
-            'name' => 'Sue',
-            'id'   => 15,
-            'branchid' => ':branch:branch:1:id'
+        $this->expected_results['branch.leaf'][] = (object) array(
+            'instance' => $ad2->branch->leaf,
+            'row_data' => array(
+                'name' => 'Sue',
+                'id'   => 15,
+                'branchid' => ':branch:branch:1:id'
+            )
         );
         $this->fake_mapper->setPersistOrder(array(
             (object)array('relation_name' => '__root'),

@@ -152,7 +152,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
                     'relations' => array()
                 );
             }
-            $relation_to_mapper[$property_address->address]['fields'][] = $mapper_address->field;
+            $relation_to_mapper[$property_address->address]['fields'][$mapper_address->field] = $property_address->property;
         }
 
         foreach ($relation_map as $address => &$relation_info) {
@@ -170,9 +170,9 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
 
             $hidden_field = $this->separateMapperFromField($relation_info['reference_field']);
             if ($relation_info['owner'] === true) {
-                $relation_to_mapper[$address]['fields'][] = $hidden_field->field;
+                $relation_to_mapper[$address]['fields'][$hidden_field->field] = null;
             } else {
-                $relation_to_mapper[$relatesTo]['fields'][] = $hidden_field->field;
+                $relation_to_mapper[$relatesTo]['fields'][$hidden_field->field] = null;
             }
         }
         return $relation_to_mapper;
