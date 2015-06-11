@@ -302,6 +302,7 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
                     'task.type' => array(
                         'mapper' => 'aura_test_task_typeref',
                         'fields' => array(
+                            'id' => 'id',
                             'code' => 'code',
                             'decode' => 'decode'
                         ),
