@@ -13,6 +13,15 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
 {
     /**
      *
+     * The order to persist objects for writing to the DB.
+     *
+     * @var array An array of relation names.
+     *
+     */
+    public $persist_order = null;
+
+    /**
+     *
      * The key to use when referring to the root mapper as a relation.
      *
      * @var string
@@ -49,14 +58,6 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      */
     protected $object_factory;
-
-    /**
-     *
-     * Used to cache the persist order used for this mapper
-     *
-     * @var null|array
-     */
-    protected $persist_order = null;
 
     /**
      *
@@ -255,7 +256,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      * @param string $property_address The relation to look up
      *
-     * @return obj|null The mapper & field declaration, if it exists
+     * @return \stdClass|null The mapper & field declaration, if it exists
      *
      */
     public function lookUpProperty($property_address)
@@ -376,7 +377,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      * Passes the provided data along to the factory and returns its output.
      *
-     * @param $data The data to pass along to the factory.
+     * @param array $data The data to pass along to the factory.
      *
      * @return mixed The collection provided by the factory.
      *
@@ -390,7 +391,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      * Passes the provided data along to the factory and returns its output.
      *
-     * @param $data The data to pass along to the factory.
+     * @param mixed $data The data to pass along to the factory.
      *
      * @return mixed The object instance provided by the factory.
      *
