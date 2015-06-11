@@ -1,5 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
+use Aura\SqlMapper_Bundle\Exception\DbOperationException;
 
 /**
  * Class that knows how to coordinate all of the desired DB operations.
@@ -21,6 +22,9 @@ class DbMediator implements DbMediatorInterface
 
     /** @var PlaceholderResolver */
     protected $placeholder_resolver;
+
+    /** @var  UnitOfWork */
+    protected $unit_of_work;
 
     /**
      *
@@ -120,6 +124,8 @@ class DbMediator implements DbMediatorInterface
      *
      * Creates a new representation of the provided object in the DB.
      *
+     * @todo this is super ugly. It needs some love. The portion that handles updating root objects needs to get extracted as the update method will use it too.
+     *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
@@ -127,10 +133,13 @@ class DbMediator implements DbMediatorInterface
      *
      * @return bool Whether or not this operation was successful.
      *
+     * @throws Exception\DbOperationException
      */
     public function create(AggregateMapperInterface $mapper, $object)
     {
+        $this->unit_of_work = new UnitOfWork($this->locator);
         $order = $mapper->getPersistOrder();
+        $relation_mapper = $mapper->getRelationToMapper();
         if ($order === null) {
             $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
             $primary_key = $root_mapper->getIdentityField();
@@ -140,18 +149,46 @@ class DbMediator implements DbMediatorInterface
             $mapper->setPersistOrder($order);
         }
         $relation_list = $this->extractor->getRowData($object, $mapper);
-
-        foreach ($relation_list as $mapper => $rows) {
-            $mapper = $this->locator->__get(key($rows));
+        foreach ($relation_list as $relation_name => $rows) {
+            $mapper_name = $relation_mapper[$relation_name]['mapper'];
+            $row_mapper = $this->locator->__get($mapper_name);
+            $cache = $row_mapper->getRowCache();
             foreach ($rows as $row) {
-                $obj = $mapper->newObject(current($row));
-                $mapper->insert($obj);
+                /* @todo this should be done in RowDataExtractor */
+                $row->row_data = (object)$row->row_data;
+                $row_data = $row->row_data;
+
+                if ($cache != null && $relation_name !== '__root' && $cache->isCached($row_data)) {
+                    $this->unit_of_work->update($mapper_name, $row_data);
+                } else {
+                    $this->unit_of_work->insert($mapper_name, $row_data);
+                }
             }
         }
-
-//        var_dump($relation_list);
-        die('done');
-
+        if ($this->unit_of_work->exec() !== false ) {
+            foreach ($relation_list as $relation_name => $rows) {
+                $mapper_name = $relation_mapper[$relation_name]['mapper'];
+                $row_mapper = $this->locator->__get($mapper_name);
+                if ($row_mapper->isAutoPrimary() === true) {
+                    $id_field = $row_mapper->getIdentityField();
+                    $id_property = $relation_mapper[$relation_name]['fields'][$id_field];
+                    foreach ($rows as $row) {
+                        $value = $row_mapper->getIdentityValue($row->row_data);
+                        $instance = $row->instance;
+                        $refl = new \ReflectionObject($instance);
+                        $property = $refl->getProperty($id_property);
+                        $property->setAccessible(true);
+                        $property->setValue($instance, $value);
+                    }
+                }
+            }
+            $this->unit_of_work = null;
+            return $object;
+        } else {
+            $error = $this->unit_of_work->getException();
+            $this->unit_of_work = null;
+            throw new DbOperationException($error->getMessage());
+        }
     }
 
     /**

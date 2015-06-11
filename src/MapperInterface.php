@@ -52,6 +52,14 @@ interface MapperInterface
 
     /**
      *
+     * Returns bool that indicates if the primary key is auto generating
+     *
+     * @return bool
+     */
+    public function isAutoPrimary();
+
+    /**
+     *
      * Given an individual object, sets its identity field value.
      *
      * @param object $object The individual object.

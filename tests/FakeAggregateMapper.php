@@ -21,7 +21,8 @@ class FakeAggregateMapper extends AbstractAggregateMapper
         'task.id'                 => 'aura_test_task.id',
         'task.name'               => 'aura_test_task.name',
         'task.type.code'          => 'aura_test_task_typeref.code',
-        'task.type.decode'        => 'aura_test_task_typeref.decode'
+        'task.type.decode'        => 'aura_test_task_typeref.decode',
+        'task.type.id'            => 'aura_test_task_typeref.id'
     ];
 
     protected $relation_map = [

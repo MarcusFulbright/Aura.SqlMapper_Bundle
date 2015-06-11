@@ -110,7 +110,8 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
             $m = new FakeMapper(
                 $g,
                 new ObjectFactory(),
-                $this->filter
+                $this->filter,
+                new RowCache($g->getPrimaryCol())
             );
             $m->setColsFields($info['map']);
 
@@ -129,6 +130,7 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
 
         $this->aggregate_mapper = new FakeAggregateMapper(new ObjectFactory());
         $this->aggregate_mapper->includeRelation('building', 'building.type', 'floor', 'task', 'task.type');
+
 
         $this->mediator = new DbMediator(
             $this->mapper_locator,
@@ -316,48 +318,61 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(4, $results['task.type']);
     }
 
-    public function testCreate()
+    public function testCreateOnlyRootNew()
     {
-        $obj = $this->createStdClass(array(
+        $obj = (object)array(
             'id' => null,
             'name' => 'Missy',
-            'building' => $this->createStdClass(array(
-                'id' => 1,
-                'name' => 'Bower Street',
-                'type' => $this->createStdClass(array(
-                    'id' => 1,
-                    'code' => 'NP',
-                    'decode' => 'Non-Profit'
-                )),
-            )),
-            'floor' => $this->createStdClass(array(
-                'id' => 2,
-                'name' => 'Accounting'
-            )),
-            'task' => array(
-                $this->createStdClass(array(
-                    'id' => null,
-                    'userid' => null,
-                    'name' => 'Paycheck Setup',
-                    'type' => $this->createStdClass(array(
-                        'id' => 3,
-                        'code' => 'F',
-                        'decode' => 'Financials'
-                    )),
-                )),
-                $this->createStdClass(array(
-                    'id' => 4,
-                    'userid' => 2,
-                    'name' => 'Budget Meeting',
-                    'type' => $this->createStdClass(array(
-                        'id' => 4,
-                        'code' => 'M',
-                        'decode' => 'Meeting'
-                    ))
-                )),
-            )
-        ));
-        var_dump($this->mediator->create($this->aggregate_mapper, $obj));
-        die();
+        );
+        //fetch data from the DB so that the gateway caches it.
+        $fetched = $this->mediator->select($this->aggregate_mapper, array('id' => 1));
+        $obj->building = $fetched['building'][0];
+        $obj->building->type = $fetched['building.type'][0];
+        $obj->floor = $fetched['floor'][0];
+        $obj->task = [];
+
+        $expected = clone($obj);
+        $expected->id = '13';
+        $this->assertEquals($expected, $this->mediator->create($this->aggregate_mapper, $obj));
     }
+
+    public function testCreateNewRootNewLeaf()
+    {
+        $obj = (object)array(
+            'id' => null,
+            'name' => 'Missy',
+            'floor' => (object) array(
+                'id' => null,
+                'name' => 'Business Intelligence'
+            )
+        );
+        //fetch data from the DB so that the gateway caches it.
+        $fetched = $this->mediator->select($this->aggregate_mapper, array('id' => 1));
+        $obj->building = $fetched['building'][0];
+        $obj->building->type = $fetched['building.type'][0];
+        $obj->task = [];
+
+        $expected = clone($obj);
+        $expected->id = '13';
+        $expected->floor->id = 4;
+        $this->assertEquals($expected, $this->mediator->create($this->aggregate_mapper, $obj));
+    }
+
+    public function testCreateExistingRootThrowsError()
+    {
+        $fetched = $this->mediator->select($this->aggregate_mapper, array('id' => 1));
+        $obj = (object) $fetched['__root'][0];
+        $obj->floor = (object) array(
+            'id' => null,
+            'name' => 'Not Going Into The DB'
+        );
+        $obj->building = (object)$fetched['building'][0];
+        $obj->building->type = (object)$fetched['building.type'][0];
+        $obj->task = [];
+
+        $this->setExpectedException('Aura\SqlMapper_Bundle\Exception\DbOperationException');
+        $this->mediator->create($this->aggregate_mapper, $obj);
+    }
+
+
 }

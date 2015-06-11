@@ -151,6 +151,11 @@ abstract class AbstractMapper implements MapperInterface
         return $this->getFieldFromCol($this->gateway->getPrimaryCol());
     }
 
+    public function isAutoPrimary()
+    {
+        return $this->gateway->isAutoPrimary();
+    }
+
     /**
      *
      * Given an individual object, returns its identity field value.
