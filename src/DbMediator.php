@@ -124,7 +124,7 @@ class DbMediator implements DbMediatorInterface
      *
      * Creates a new representation of the provided object in the DB.
      *
-     * @todo this is super ugly. It needs some love. The portion that handles updating root objects needs to get extracted as the update method will use it too.
+     * @todo this is super ugly. It needs some love.
      *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
@@ -137,18 +137,39 @@ class DbMediator implements DbMediatorInterface
      */
     public function create(AggregateMapperInterface $mapper, $object)
     {
-        $this->unit_of_work = new UnitOfWork($this->locator);
-        $order = $mapper->getPersistOrder();
+        //@todo this should get injected somehow
+        $uow = new UnitOfWork($this->locator);
         $relation_mapper = $mapper->getRelationToMapper();
-        if ($order === null) {
-            $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
-            $primary_key = $root_mapper->getIdentityField();
-            $primary_value = $root_mapper->getIdentityValue($object);
-            $criteria = array($primary_key => $primary_value);
-            $order = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
-            $mapper->setPersistOrder($order);
+        if ($mapper->getPersistOrder() === null) {
+            $this->setPersistOrder($mapper, $object);
         }
+        //@todo extrapolate this to its own class
+        $callback = function (UnitOfWork $uow, $context) {
+            $cache = $context->cache;
+            $row = $context->row;
+            $is_cached = $cache != null && $cache->isCached($row);
+            $is_root = $context->relation_name === '__root';
+                if ($is_cached && ! $is_root){
+                    $uow->update($context->mapper_name, $row);
+                } else {
+                    $uow->insert($context->mapper_name, $row);
+                }
+        };
+        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
+        if ($uow->exec() !== false ) {
+            $this->updatePrimaryProperty($relation_list, $relation_mapper);
+            return $object;
+        } else {
+            $error = $uow->getException();
+            $this->unit_of_work = null;
+            throw new DbOperationException($error->getMessage());
+        }
+    }
+
+    protected function populateUnitOfWork(AggregateMapperInterface $mapper, $object, UnitOfWork $uow, Callable $func)
+    {
         $relation_list = $this->extractor->getRowData($object, $mapper);
+        $relation_mapper = $mapper->getRelationToMapper();
         foreach ($relation_list as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
             $row_mapper = $this->locator->__get($mapper_name);
@@ -157,38 +178,47 @@ class DbMediator implements DbMediatorInterface
                 /* @todo this should be done in RowDataExtractor */
                 $row->row_data = (object)$row->row_data;
                 $row_data = $row->row_data;
+                $context = (object)[
+                    'row' => $row_data,
+                    'relation_name' => $relation_name,
+                    'cache' => $cache,
+                    'mapper_name' => $mapper_name
+                ];
+                $func($uow, $context);
+            }
+        }
+        return $relation_list;
+    }
 
-                if ($cache != null && $relation_name !== '__root' && $cache->isCached($row_data)) {
-                    $this->unit_of_work->update($mapper_name, $row_data);
-                } else {
-                    $this->unit_of_work->insert($mapper_name, $row_data);
+    protected function setPersistOrder(AggregateMapperInterface $mapper, $object)
+    {
+        $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
+        $primary_key = $root_mapper->getIdentityField();
+        $primary_value = $root_mapper->getIdentityValue($object);
+        $criteria = array($primary_key => $primary_value);
+        $order = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
+        $mapper->setPersistOrder($order);
+    }
+
+    protected function updatePrimaryProperty($relation_list, $relation_mapper)
+    {
+        foreach ($relation_list as $relation_name => $rows) {
+            $mapper_name = $relation_mapper[$relation_name]['mapper'];
+            $row_mapper = $this->locator->__get($mapper_name);
+            if ($row_mapper->isAutoPrimary() === true) {
+                $id_field = $row_mapper->getIdentityField();
+                $id_property = $relation_mapper[$relation_name]['fields'][$id_field];
+                foreach ($rows as $row) {
+                    $value = $row_mapper->getIdentityValue($row->row_data);
+                    $instance = $row->instance;
+                    $refl = new \ReflectionObject($instance);
+                    $property = $refl->getProperty($id_property);
+                    $property->setAccessible(true);
+                    $property->setValue($instance, $value);
                 }
             }
         }
-        if ($this->unit_of_work->exec() !== false ) {
-            foreach ($relation_list as $relation_name => $rows) {
-                $mapper_name = $relation_mapper[$relation_name]['mapper'];
-                $row_mapper = $this->locator->__get($mapper_name);
-                if ($row_mapper->isAutoPrimary() === true) {
-                    $id_field = $row_mapper->getIdentityField();
-                    $id_property = $relation_mapper[$relation_name]['fields'][$id_field];
-                    foreach ($rows as $row) {
-                        $value = $row_mapper->getIdentityValue($row->row_data);
-                        $instance = $row->instance;
-                        $refl = new \ReflectionObject($instance);
-                        $property = $refl->getProperty($id_property);
-                        $property->setAccessible(true);
-                        $property->setValue($instance, $value);
-                    }
-                }
-            }
-            $this->unit_of_work = null;
-            return $object;
-        } else {
-            $error = $this->unit_of_work->getException();
-            $this->unit_of_work = null;
-            throw new DbOperationException($error->getMessage());
-        }
+        $this->unit_of_work = null;
     }
 
     /**
@@ -198,14 +228,41 @@ class DbMediator implements DbMediatorInterface
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
-     * @param array $object The instance of the object we want to update.
+     * @param object $object The instance of the object we want to update.
      *
-     * @return bool Whether or not this operation was successful.
+     * @throws DbOperationException
      *
+     * @return object
      */
     public function update(AggregateMapperInterface $mapper, $object)
     {
-
+        //@todo this should get injected somehow
+        $uow = new UnitOfWork($this->locator);
+        $relation_mapper = $mapper->getRelationToMapper();
+        if ($mapper->getPersistOrder() === null) {
+            $this->setPersistOrder($mapper, $object);
+        }
+        //@todo extrapolate this to its own class
+        $callback = function (UnitOfWork $uow, $context) {
+            $cache = $context->cache;
+            $row = $context->row;
+            $is_cached = $cache != null && $cache->isCached($row);
+            $is_root = $context->relation_name === '__root';
+                if ($is_cached || $is_root){
+                    $uow->update($context->mapper_name, $row);
+                } else {
+                    $uow->insert($context->mapper_name, $row);
+                }
+        };
+        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
+        if ($uow->exec() !== false ) {
+            $this->updatePrimaryProperty($relation_list, $relation_mapper);
+            return $object;
+        } else {
+            $error = $uow->getException();
+            $this->unit_of_work = null;
+            throw new DbOperationException($error->getMessage());
+        }
     }
 
     /**
@@ -215,13 +272,38 @@ class DbMediator implements DbMediatorInterface
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
-     * @param array $object The instance of the object we want to delete.
+     * @param object $object The instance of the object we want to delete.
      *
-     * @return bool Whether or not this operation was successful.
+     * @return object Whether or not this operation was successful.
      *
+     * @throws DbOperationException
      */
     public function delete(AggregateMapperInterface $mapper, $object)
     {
-
+        //@todo this should get injected somehow
+        $uow = new UnitOfWork($this->locator);
+        $relation_mapper = $mapper->getRelationToMapper();
+        if ($mapper->getPersistOrder() === null) {
+            $this->setPersistOrder($mapper, $object);
+        }
+        //@todo extrapolate this to its own class
+        $callback = function (UnitOfWork $uow, $context) {
+            $cache = $context->cache;
+            $row = $context->row;
+            if ($cache != null && $cache->isCached($row) === true) {
+                return;
+            } else {
+                $uow->delete($context->mapper_name, $row);
+            }
+        };
+        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
+        if ($uow->exec() !== false ) {
+            $this->updatePrimaryProperty($relation_list, $relation_mapper);
+            return $object;
+        } else {
+            $error = $uow->getException();
+            $this->unit_of_work = null;
+            throw new DbOperationException($error->getMessage());
+        }
     }
 }

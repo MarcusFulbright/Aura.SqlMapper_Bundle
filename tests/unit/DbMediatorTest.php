@@ -374,5 +374,20 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
         $this->mediator->create($this->aggregate_mapper, $obj);
     }
 
-
+    public function testUpdateWithRootChangeAndNewLeaf()
+    {
+        $fetched = $this->mediator->select($this->aggregate_mapper, array('id' => 1));
+        $obj = (object) $fetched['__root'][0];
+        $obj->name = 'Altered';
+        $obj->floor = (object) array(
+            'id' => null,
+            'name' => 'Brand New Unique Floor Name'
+        );
+        $obj->building = (object)$fetched['building'][0];
+        $obj->building->type = (object)$fetched['building.type'][0];
+        $obj->task = [];
+        $expected = clone($obj);
+        $expected->floor->id = '4';
+        $this->assertEquals($expected, $this->mediator->update($this->aggregate_mapper, $obj));
+    }
 }
