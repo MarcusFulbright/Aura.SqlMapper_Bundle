@@ -1,6 +1,8 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
+
 use Aura\SqlMapper_Bundle\Exception\DbOperationException;
+use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 
 /**
  * Class that knows how to coordinate all of the desired DB operations.
@@ -14,38 +16,37 @@ class DbMediator implements DbMediatorInterface
     /** @var MapperLocator */
     protected $locator;
 
-    /** @var Transaction */
-    protected $transaction;
-
-    /** @var  OperationArranger */
+     /** @var  OperationArranger */
     protected $operation_arranger;
 
     /** @var PlaceholderResolver */
     protected $placeholder_resolver;
 
-    /** @var  UnitOfWork */
-    protected $unit_of_work;
+    /** @var RowDataExtractor */
+    protected $extractor;
+
+    /** @var OperationCallbackFactory */
+    protected $callback_factory;
 
     /**
-     *
      * @param MapperLocator $locator
-     * @param Transaction $transaction
      * @param OperationArranger $operation_arranger
      * @param PlaceholderResolver $placeholder_resolver
      * @param RowDataExtractor $extractor
+     * @param OperationCallbackFactory $callback_factory
      */
     public function __construct(
         MapperLocator $locator,
-        Transaction $transaction,
         OperationArranger $operation_arranger,
         PlaceholderResolver $placeholder_resolver,
-        RowDataExtractor $extractor
+        RowDataExtractor $extractor,
+        OperationCallbackFactory $callback_factory
     ) {
         $this->locator              = $locator;
-        $this->transaction          = $transaction;
         $this->operation_arranger   = $operation_arranger;
         $this->placeholder_resolver = $placeholder_resolver;
         $this->extractor            = $extractor;
+        $this->callback_factory = $callback_factory;
     }
 
     /**
@@ -129,39 +130,86 @@ class DbMediator implements DbMediatorInterface
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
-     * @param object $object The instance of the object we want to create.
+     * @param object $obj The instance of the object we want to create.
      *
      * @return bool Whether or not this operation was successful.
      *
      * @throws Exception\DbOperationException
      */
-    public function create(AggregateMapperInterface $mapper, $object)
+    public function create(AggregateMapperInterface $mapper, $obj)
     {
         //@todo this should get injected somehow
         $uow = new UnitOfWork($this->locator);
         $relation_mapper = $mapper->getRelationToMapper();
         if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $object);
+            $this->setPersistOrder($mapper, $obj);
         }
-        //@todo extrapolate this to its own class
-        $callback = function (UnitOfWork $uow, $context) {
-            $cache = $context->cache;
-            $row = $context->row;
-            $is_cached = $cache != null && $cache->isCached($row);
-            $is_root = $context->relation_name === '__root';
-                if ($is_cached && ! $is_root){
-                    $uow->update($context->mapper_name, $row);
-                } else {
-                    $uow->insert($context->mapper_name, $row);
-                }
-        };
-        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
+        $relation_list = $this->populateUnitOfWork($mapper, $obj, $uow, $this->callback_factory->getInsertCallback());
         if ($uow->exec() !== false ) {
             $this->updatePrimaryProperty($relation_list, $relation_mapper);
-            return $object;
+            return $obj;
         } else {
             $error = $uow->getException();
-            $this->unit_of_work = null;
+            throw new DbOperationException($error->getMessage());
+        }
+    }
+
+    /**
+     *
+     * Updates the provided object in the DB.
+     *
+     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * we are concerned with.
+     *
+     * @param object $obj The instance of the object we want to update.
+     *
+     * @throws DbOperationException
+     *
+     * @return object
+     */
+    public function update(AggregateMapperInterface $mapper, $obj)
+    {
+        //@todo this should get injected somehow
+        $uow = new UnitOfWork($this->locator);
+        $relation_mapper = $mapper->getRelationToMapper();
+        if ($mapper->getPersistOrder() === null) {
+            $this->setPersistOrder($mapper, $obj);
+        }
+        $relation_list = $this->populateUnitOfWork($mapper, $obj, $uow, $this->callback_factory->getUpdateCallback());
+        if ($uow->exec() !== false ) {
+            $this->updatePrimaryProperty($relation_list, $relation_mapper);
+            return $obj;
+        } else {
+            $error = $uow->getException();
+            throw new DbOperationException($error->getMessage());
+        }
+    }
+
+    /**
+     *
+     * Deletes the provided object from the DB.
+     *
+     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * we are concerned with.
+     *
+     * @param object $object The instance of the object we want to delete.
+     *
+     * @return object Whether or not this operation was successful.
+     *
+     * @throws DbOperationException
+     */
+    public function delete(AggregateMapperInterface $mapper, $object)
+    {
+        //@todo this should get injected somehow
+        $uow = new UnitOfWork($this->locator);
+        if ($mapper->getPersistOrder() === null) {
+            $this->setPersistOrder($mapper, $object);
+        }
+        $this->populateUnitOfWork($mapper, $object, $uow, $this->callback_factory->getDeleteCallback());
+        if ($uow->exec() !== false ) {
+            return true;
+        } else {
+            $error = $uow->getException();
             throw new DbOperationException($error->getMessage());
         }
     }
@@ -178,13 +226,7 @@ class DbMediator implements DbMediatorInterface
                 /* @todo this should be done in RowDataExtractor */
                 $row->row_data = (object)$row->row_data;
                 $row_data = $row->row_data;
-                $context = (object)[
-                    'row' => $row_data,
-                    'relation_name' => $relation_name,
-                    'cache' => $cache,
-                    'mapper_name' => $mapper_name
-                ];
-                $func($uow, $context);
+                $func($uow, $this->callback_factory->newContext($row_data, $mapper_name, $relation_name, $cache));
             }
         }
         return $relation_list;
@@ -217,93 +259,6 @@ class DbMediator implements DbMediatorInterface
                     $property->setValue($instance, $value);
                 }
             }
-        }
-        $this->unit_of_work = null;
-    }
-
-    /**
-     *
-     * Updates the provided object in the DB.
-     *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
-     * we are concerned with.
-     *
-     * @param object $object The instance of the object we want to update.
-     *
-     * @throws DbOperationException
-     *
-     * @return object
-     */
-    public function update(AggregateMapperInterface $mapper, $object)
-    {
-        //@todo this should get injected somehow
-        $uow = new UnitOfWork($this->locator);
-        $relation_mapper = $mapper->getRelationToMapper();
-        if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $object);
-        }
-        //@todo extrapolate this to its own class
-        $callback = function (UnitOfWork $uow, $context) {
-            $cache = $context->cache;
-            $row = $context->row;
-            $is_cached = $cache != null && $cache->isCached($row);
-            $is_root = $context->relation_name === '__root';
-                if ($is_cached || $is_root){
-                    $uow->update($context->mapper_name, $row);
-                } else {
-                    $uow->insert($context->mapper_name, $row);
-                }
-        };
-        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
-        if ($uow->exec() !== false ) {
-            $this->updatePrimaryProperty($relation_list, $relation_mapper);
-            return $object;
-        } else {
-            $error = $uow->getException();
-            $this->unit_of_work = null;
-            throw new DbOperationException($error->getMessage());
-        }
-    }
-
-    /**
-     *
-     * Deletes the provided object from the DB.
-     *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
-     * we are concerned with.
-     *
-     * @param object $object The instance of the object we want to delete.
-     *
-     * @return object Whether or not this operation was successful.
-     *
-     * @throws DbOperationException
-     */
-    public function delete(AggregateMapperInterface $mapper, $object)
-    {
-        //@todo this should get injected somehow
-        $uow = new UnitOfWork($this->locator);
-        $relation_mapper = $mapper->getRelationToMapper();
-        if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $object);
-        }
-        //@todo extrapolate this to its own class
-        $callback = function (UnitOfWork $uow, $context) {
-            $cache = $context->cache;
-            $row = $context->row;
-            if ($cache != null && $cache->isCached($row) === true) {
-                return;
-            } else {
-                $uow->delete($context->mapper_name, $row);
-            }
-        };
-        $relation_list = $this->populateUnitOfWork($mapper, $object, $uow, $callback);
-        if ($uow->exec() !== false ) {
-            $this->updatePrimaryProperty($relation_list, $relation_mapper);
-            return $object;
-        } else {
-            $error = $uow->getException();
-            $this->unit_of_work = null;
-            throw new DbOperationException($error->getMessage());
         }
     }
 }

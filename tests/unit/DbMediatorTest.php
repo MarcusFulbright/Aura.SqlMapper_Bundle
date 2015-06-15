@@ -4,6 +4,7 @@ namespace Aura\SqlMapper_Bundle;
 use Aura\Sql\ConnectionLocator;
 use Aura\Sql\ExtendedPdo;
 use Aura\Sql\Profiler;
+use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
 
@@ -134,10 +135,10 @@ class DbMediatorTest extends \PHPUnit_Framework_TestCase
 
         $this->mediator = new DbMediator(
             $this->mapper_locator,
-            new Transaction(),
             new OperationArranger(),
             new PlaceholderResolver(),
-            new RowDataExtractor()
+            new RowDataExtractor(),
+            new OperationCallbackFactory()
         );
     }
 
