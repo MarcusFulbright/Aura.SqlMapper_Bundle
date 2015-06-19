@@ -242,6 +242,20 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
 
     /**
      *
+     * Looks up fields for a particular relation.
+     *
+     * @param string $relation_name The relation to look up
+     *
+     * @return array|null The fields.
+     *
+     */
+    public function lookUpFields($relation_name)
+    {
+        return $this->lookUpRelationToMapper($relation_name, 'fields');
+    }
+
+    /**
+     *
      * Looks up a relation by name. If there is none, returns null.
      *
      * @param string $property_address The relation to look up
@@ -326,7 +340,11 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      */
     public function joinAddress($pieces)
     {
-        return implode($this->address_delimiter, is_array($pieces) ? $pieces : func_get_args());
+        $pieces = is_array($pieces) ? $pieces : func_get_args();
+        if (count($pieces) && $pieces[0] === $this->root_relation_address) {
+           array_shift($pieces);
+        }
+        return implode($this->address_delimiter, $pieces);
     }
 
     public function getRelationByProperty($property_address)
