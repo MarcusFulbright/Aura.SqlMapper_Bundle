@@ -9,9 +9,6 @@ class DeleteCallbackTest extends \PHPUnit_Framework_TestCase
     /** @var DeleteCallback */
     protected $callback;
 
-    /** @var MockInterface */
-    protected $uow;
-
     /** @var \stdClass */
     protected $row;
 
@@ -22,7 +19,6 @@ class DeleteCallbackTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->row = (object)['name' => 'Jon', 'age' => 45];
-        $this->uow = \Mockery::mock('Aura\SqlMapper_Bundle\UnitOfWork');
         $this->callback = new DeleteCallback();
     }
 
@@ -44,23 +40,23 @@ class DeleteCallbackTest extends \PHPUnit_Framework_TestCase
     public function testDeleteNoCache()
     {
         $context = $this->getContext(false);
-        $this->uow->shouldReceive('delete')->with($this->mapper_name, $this->row)->once();
-        $this->callback->__invoke($this->uow, $context);
+        $result = $this->callback->__invoke($context);
+        $this->assertEquals('delete', $result->method);
     }
 
     public function testDeleteInCache()
     {
         $context = $this->getContext();
         $context->cache->shouldReceive('isCached')->with($this->row)->once()->andReturn(true);
-        $this->uow->shouldReceive('delete')->with($this->mapper_name, $this->row)->once();
-        $this->callback->__invoke($this->uow, $context);
+        $result = $this->callback->__invoke($context);
+        $this->assertEquals('delete', $result->method);
     }
 
     public function testDeleteNotInCache()
     {
         $context = $this->getContext();
         $context->cache->shouldReceive('isCached')->with($this->row)->once()->andReturn(false);
-        $this->uow->shouldReceive('delete')->withAnyArgs()->never();
-        $this->callback->__invoke($this->uow, $context);
+        $result = $this->callback->__invoke($context);
+        $this->assertEquals(null, $result->method);
     }
 }

@@ -23,7 +23,7 @@ class OperationArranger
      * @return array
      *
      */
-    public function getPathToRoot(AggregateMapperInterface $mapper, array $criteria = array())
+    public function getPathToRoot(AggregateMapperInterface $mapper, array $criteria = [])
     {
         $entry_context = $this->getNode($criteria, $mapper);
         $path[] = $entry_context;
@@ -134,10 +134,16 @@ class OperationArranger
     protected function getNode(array $criteria, AggregateMapperInterface $mapper)
     {
         $context = new \stdClass();
-        $property_address = $mapper->separatePropertyFromAddress(key($criteria));
-        $context->relation_name = $property_address->address;
-        $context->criteria = array($property_address->property => current($criteria));
-        $context->fields[] = $property_address->property;
+
+        if (empty($criteria)) {
+            $context->relation_name = '__root';
+            $context->criteria = null;
+        } else {
+            $property_address = $mapper->separatePropertyFromAddress(key($criteria));
+            $context->relation_name = $property_address->address;
+            $context->criteria = array($property_address->property => current($criteria));
+            $context->fields[] = $property_address->property;
+        }
         foreach ($mapper->getRelationToMapper()[$context->relation_name]['relations'] as $relation) {
                 $info = $mapper->getRelationMap()[$relation['relation_name']];
             if ($info['owner'] === true && $relation['relation_name'] === $context->relation_name) {

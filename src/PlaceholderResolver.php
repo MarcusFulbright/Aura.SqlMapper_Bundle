@@ -14,6 +14,7 @@ class PlaceholderResolver
      * If necessary,traverses values for place holders and resolves them, otherwise just returns the value.
      *
      * @todo Need to teach this to check each value in an array and resolve place holders that are found
+     * @todo Rename to ResolveValue
      *
      * @param mixed $value could potentially have a placeholder
      *
@@ -43,6 +44,20 @@ class PlaceholderResolver
             return $where_in;
         }
         return $value;
+    }
+
+    public function resolveRowData(\stdClass $row_data, array $data)
+    {
+        $props = get_object_vars($row_data);
+        foreach ($props as $prop => $value) {
+            $has_placeholder = substr($value, 0, 1) === ':';
+            if ($has_placeholder) {
+                $keys = ['relation', 'mapper', 'index', 'field'];
+                $info = array_combine($keys, explode(':', ltrim($value, ':')));
+                $row_data->$prop = $data[$info['relation']][$info['index']]->row_data->$info['field'];
+            }
+        }
+        return $row_data;
     }
 
     protected function translateField(AggregateMapperInterface $mapper, $prop_index)
