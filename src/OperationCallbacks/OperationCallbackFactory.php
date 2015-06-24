@@ -1,10 +1,48 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
+use Aura\SqlMapper_Bundle\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\OperationArranger;
+use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
 
 class OperationCallbackFactory implements CallbackFactoryInterface
 {
+    /**
+     * @param array $operation_list
+     * @param PlaceholderResolver $resolver
+     * @param MapperLocator $locator
+     * @param array $extracted
+     * @return CommitCallback
+     */
+    public function getCommitCallback(
+        array $operation_list,
+        PlaceholderResolver $resolver,
+        MapperLocator $locator,
+        array $extracted
+    ) {
+        return new CommitCallback($operation_list, $resolver, $locator, $extracted);
+    }
+
+    public function getIdentifierCallback(
+        MapperLocator $locator,
+        OperationArranger $arranger,
+        AggregateMapperInterface $mapper,
+        PlaceholderResolver $resolver
+    ) {
+        return new SelectIdentifierCallback($locator, $arranger, $mapper, $resolver);
+    }
+
+    public function getSelectCallback(
+        MapperLocator $locator,
+        AggregateMapperInterface $mapper,
+        OperationArranger $arranger,
+        PlaceholderResolver $resolver
+    ) {
+        return new SelectCallback($locator, $mapper, $arranger, $resolver);
+    }
+
     /** @return OperationCallbackInterface */
     public function getInsertCallback()
     {

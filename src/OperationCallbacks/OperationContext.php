@@ -17,6 +17,9 @@ class OperationContext
     /** @var string */
     public $relation_name;
 
+    /** @var string */
+    public $method;
+
     /**
      * @param RowCacheInterface $cache
      * @param \stdClass $row

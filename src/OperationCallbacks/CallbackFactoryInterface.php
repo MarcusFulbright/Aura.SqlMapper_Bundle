@@ -1,10 +1,26 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
+use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
 
 interface CallbackFactoryInterface
 {
+    /**
+     * @param array $operation_list
+     * @param PlaceholderResolver $resolver
+     * @param MapperLocator $locator
+     * @param array $extracted
+     * @return CommitCallback
+     */
+    public function getCommitCallback(
+        array $operation_list,
+        PlaceholderResolver $resolver,
+        MapperLocator $locator,
+        array $extracted
+    );
+
     /** @return OperationCallbackInterface */
     public function getInsertCallback();
 
