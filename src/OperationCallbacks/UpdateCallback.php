@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-class UpdateCallback implements OperationCallbackInterface
+class UpdateCallback implements TransactionCallbackInterface
 {
     public function __invoke(OperationContext $context)
     {

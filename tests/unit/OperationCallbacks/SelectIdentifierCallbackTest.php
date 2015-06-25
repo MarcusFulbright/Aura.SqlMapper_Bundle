@@ -44,9 +44,9 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperInterface');
         $this->resolver = \Mockery::mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
         $this->callback = new SelectIdentifierCallback(
+            $this->aggregate_mapper,
             $this->locator,
             $this->arranger,
-            $this->aggregate_mapper,
             $this->resolver
         );
 

@@ -3,6 +3,7 @@ namespace Aura\SqlMapper_Bundle;
 
 use Aura\SqlMapper_Bundle\Exception\DbOperationException;
 use Aura\SqlMapper_Bundle\OperationCallbacks\CallbackFactoryInterface;
+use Aura\SqlMapper_Bundle\OperationCallbacks\CommitCallback;
 use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 
 /**
@@ -189,7 +190,7 @@ class DbMediator implements DbMediatorInterface
         return true;
     }
 
-    protected function invokeTransaction(Transaction $transaction, $call_back)
+    protected function invokeTransaction(Transaction $transaction, CommitCallback $call_back)
     {
         try {
             $transaction->__invoke($call_back, $this->locator);

@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-class DeleteCallback implements OperationCallbackInterface
+class DeleteCallback implements TransactionCallbackInterface
 {
     public function __invoke(OperationContext $context)
     {

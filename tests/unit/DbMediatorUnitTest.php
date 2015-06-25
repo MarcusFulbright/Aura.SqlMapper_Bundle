@@ -75,7 +75,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperInterface');
         $this->transaction = \Mockery::mock('Aura\SqlMapper_Bundle\Transaction');
         $this->context = \Mockery::mock('Aura\SqlMapper_Bundle\OperationCallbacks\OperationContext');
-        $this->commit_callback = \Mockery::mock('Aura\SqlMapper_Bundle\OperationCallbacks\UpdateCallback');
+        $this->commit_callback = \Mockery::mock('Aura\SqlMapper_Bundle\OperationCallbacks\CommitCallback');
         $this->operation_list = [$this->context, $this->context];
         $this->obj = (object) [
             'id' => 2,

@@ -8,7 +8,7 @@ use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
 
-class SelectIdentifierCallback
+class SelectIdentifierCallback implements SelectCallbackInterface
 {
     /** @var MapperLocator */
     protected $locator;
@@ -23,9 +23,9 @@ class SelectIdentifierCallback
     protected $resolver;
 
     public function __construct(
+        AggregateMapperInterface $mapper,
         MapperLocator $locator,
         OperationArranger $arranger,
-        AggregateMapperInterface $mapper,
         PlaceholderResolver $resolver
     ) {
         $this->locator  = $locator;
@@ -34,13 +34,13 @@ class SelectIdentifierCallback
         $this->resolver = $resolver;
     }
 
-    public function __invoke($path_to_root)
+    public function __invoke(array $path)
     {
         $relation_to_mapper = $this->mapper->getRelationToMapper();
         $root_mapper = $this->locator->__get($relation_to_mapper['__root']['mapper']);
         $root_primary = $root_mapper->getIdentityField();
         $ids = [];
-        foreach ($path_to_root as $node) {
+        foreach ($path as $node) {
             $row_mapper = $this->locator->__get($relation_to_mapper[$node->relation_name]['mapper']);
             $criteria = $node->criteria;
             if ($criteria === null) {
