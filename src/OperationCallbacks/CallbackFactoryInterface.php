@@ -6,14 +6,23 @@ use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
 use Aura\SqlMapper_Bundle\Transaction;
 
+/**
+ * Defines all the methods used to create Operation Callback methods.
+ */
 interface CallbackFactoryInterface
 {
     /**
-     * @param array $operation_list
+     *
+     * @param array $operation_list Array of OperationContext objects in the correct order for execution
+     *
      * @param PlaceholderResolver $resolver
-     * @param MapperLocator $locator
-     * @param array $extracted
+     *
+     * e@param MapperLocator $locator
+     *
+     * @param array $extracted Row Data extracted from the aggregate object using the RowDataExtractor
+     *
      * @return CommitCallback
+     *
      */
     public function getCommitCallback(
         array $operation_list,
@@ -25,21 +34,27 @@ interface CallbackFactoryInterface
     /** @return Transaction */
     public function getTransaction();
 
-    /** @return OperationCallbackInterface */
+    /** @return InsertCallback */
     public function getInsertCallback();
 
-    /** @return OperationCallbackInterface */
+    /** @return UpdateCallback */
     public function getUpdateCallback();
 
-    /** @return OperationCallbackInterface */
+    /** @return DeleteCallback */
     public function getDeleteCallback();
 
     /**
-     * @param RowCacheInterface $cache
-     * @param \stdClass $row
-     * @param $mapper_name
-     * @param $relation_name
+     *
+     * @param RowCacheInterface $cache From the appropriate row data mapper
+     *
+     * @param \stdClass $row Object that represents the appropriate row data, can be obtained form Row Data Extractor
+     *
+     * @param string $mapper_name name of the row data mapper
+     *
+     * @param string $relation_name name of the relation that this row data belongs to according to aggregate map
+     *
      * @return OperationContext
+     *
      */
     public function newContext(\stdClass $row, $mapper_name, $relation_name, RowCacheInterface $cache = null);
 }

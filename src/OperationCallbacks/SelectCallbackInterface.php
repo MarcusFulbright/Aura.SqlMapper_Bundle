@@ -6,8 +6,25 @@ use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
+
+/**
+ * Describes how select Callbacks function.
+ *
+ * To select entire row dat objects, see the SelectCallback
+ * To select Identifier fields, primary keys and foreign keys, see SelectIdentifierCallback
+ */
 interface SelectCallbackInterface
 {
+    /**
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param MapperLocator $locator
+     *
+     * e@param OperationArranger $arranger
+     *
+     * @param PlaceholderResolver $resolver
+     *
+     */
     public function __construct(
         AggregateMapperInterface $mapper,
         MapperLocator $locator,
@@ -15,5 +32,8 @@ interface SelectCallbackInterface
         PlaceholderResolver $resolver
     );
 
+    /**
+     * @param array $path Array of OperationContext objects in the order to execute them.
+     */
     public function __invoke(array $path);
 }

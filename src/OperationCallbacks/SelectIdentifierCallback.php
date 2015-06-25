@@ -8,6 +8,11 @@ use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
 
+/**
+ *
+ * Used to select Primary keys and foreign keys, not row data objects.
+ *
+ */
 class SelectIdentifierCallback implements SelectCallbackInterface
 {
     /** @var MapperLocator */
@@ -22,6 +27,9 @@ class SelectIdentifierCallback implements SelectCallbackInterface
     /** @var PlaceholderResolver */
     protected $resolver;
 
+    /**
+     * {@inheritdoc}
+     */
     public function __construct(
         AggregateMapperInterface $mapper,
         MapperLocator $locator,
@@ -34,6 +42,12 @@ class SelectIdentifierCallback implements SelectCallbackInterface
         $this->resolver = $resolver;
     }
 
+    /**
+     *
+     * Traverses the given path and only selects primary and foreign keys.
+     *
+     * {@inheritdoc}
+     */
     public function __invoke(array $path)
     {
         $relation_to_mapper = $this->mapper->getRelationToMapper();

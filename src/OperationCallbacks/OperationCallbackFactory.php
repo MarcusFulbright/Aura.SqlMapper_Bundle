@@ -17,11 +17,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     }
 
     /**
-     * @param array $operation_list
-     * @param PlaceholderResolver $resolver
-     * @param MapperLocator $locator
-     * @param array $extracted
-     * @return CommitCallback
+     * {@inheritdoc}
      */
     public function getCommitCallback(
         array $operation_list,
@@ -33,11 +29,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     }
 
     /**
-     * @param AggregateMapperInterface $mapper
-     * @param MapperLocator $locator
-     * @param OperationArranger $arranger
-     * @param PlaceholderResolver $resolver
-     * @return SelectIdentifierCallback
+     * {@inheritdoc}
      */
     public function getIdentifierCallback(
         AggregateMapperInterface $mapper,
@@ -49,11 +41,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     }
 
     /**
-     * @param MapperLocator $locator
-     * @param AggregateMapperInterface $mapper
-     * @param OperationArranger $arranger
-     * @param PlaceholderResolver $resolver
-     * @return SelectCallback
+     * {@inheritdoc}
      */
     public function getSelectCallback(
         AggregateMapperInterface $mapper,
@@ -64,30 +52,26 @@ class OperationCallbackFactory implements CallbackFactoryInterface
         return new SelectCallback($mapper, $locator, $arranger, $resolver);
     }
 
-    /** @return InsertCallback */
+    /** {@inheritdoc} */
     public function getInsertCallback()
     {
         return new InsertCallback();
     }
 
-    /** @return UpdateCallback */
+    /** {@inheritdoc} */
     public function getUpdateCallback()
     {
         return new UpdateCallback();
     }
 
-    /** @return DeleteCallback */
+    /** {@inheritdoc} */
     public function getDeleteCallback()
     {
         return new DeleteCallback();
     }
 
     /**
-     * @param RowCacheInterface $cache
-     * @param \stdClass $row
-     * @param $mapper_name
-     * @param $relation_name
-     * @return OperationContext
+     * {@inheritdoc}
      */
     public function newContext(\stdClass $row, $mapper_name, $relation_name, RowCacheInterface $cache = null)
     {

@@ -10,8 +10,8 @@ use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
  * Class that knows how to coordinate all of the desired DB operations.
  *
  * In charge of being the mediator between the aggregate domain layer and the DB layer. Any time a db operation is
- * required for an aggregate it should go through here. Knows how to use Unit of Work, Transaction (insert, update,
- * delete) and how to handle Select statements.
+ * required for an aggregate it should go through here. Db mediator knows how to craft Select Statements and to use
+ * transactions for inserts, updates, and deletes.
  */
 class DbMediator implements DbMediatorInterface
 {
@@ -56,12 +56,10 @@ class DbMediator implements DbMediatorInterface
      * Performs a select statement with optional criteria.
      *
      * When criteria is present, this method will select primary keys and join properties up to the root table, not the
-     * actual row data objects. After selecting the appropriate info for the root table, all row data objects for the
-     * root will get selected based on their primary keys. This method then uses the relation map and the root row data
-     * objects to crawl through a dependency chain built from the relation map to select all leaf tables.
+     * actual row data objects. Root objects get selected based on the previously obtained primary key and leaf objects
+     * get selected based on foreign key relationships.
      *
      * @todo Support multiple criteria
-     * Context factory and move some of this stuff in there?
      *
      * @param AggregateMapperInterface $mapper
      *
@@ -97,16 +95,20 @@ class DbMediator implements DbMediatorInterface
 
     /**
      *
-     * Creates a new representation of the provided object in the DB.
+     * Creates new data entries for the given object.
+     *
+     * For roots, inserts will always get performed, for leaves, inserts and updates will get performed appropriately.
+     * Auto-incrementing primary keys will get updated on the given $obj by reference.
      *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param object $obj The instance of the object we want to create.
      *
-     * @return bool Whether or not this operation was successful.
+     * @return object The given object.
      *
-     * @throws Exception\DbOperationException
+     * @throws Exception\DbOperationException When the transaction fails
+     *
      */
     public function create(AggregateMapperInterface $mapper, $obj)
     {
@@ -131,14 +133,18 @@ class DbMediator implements DbMediatorInterface
      *
      * Updates the provided object in the DB.
      *
+     * For roots, update will always get performed, for leaves updates and inserts will get performed accordingly.
+     * Auto-incrementing primary keys will get updated on the given obj by reference.
+     *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param object $obj The instance of the object we want to update.
      *
-     * @throws DbOperationException
+     * @throws DbOperationException When the transaction fails
      *
      * @return object
+     *
      */
     public function update(AggregateMapperInterface $mapper, $obj)
     {
@@ -163,6 +169,11 @@ class DbMediator implements DbMediatorInterface
      *
      * Deletes the provided object from the DB.
      *
+     * For now, everything on the root will get deleted from the DB. Destroy relationships by setting properties to null
+     * before calling delete to avoid deleting them form the DB.
+     *
+     * @todo add a way to configure delete behavior.
+     *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
@@ -170,7 +181,8 @@ class DbMediator implements DbMediatorInterface
      *
      * @return object Whether or not this operation was successful.
      *
-     * @throws DbOperationException
+     * @throws DbOperationException When the Transaction fails
+     *
      */
     public function delete(AggregateMapperInterface $mapper, $object)
     {
@@ -190,6 +202,17 @@ class DbMediator implements DbMediatorInterface
         return true;
     }
 
+    /**
+     *
+     * Invokes a transaction with the given callback in a try-catch.
+     *
+     * @param Transaction $transaction
+     *
+     * @param CommitCallback $call_back
+     *
+     * @throws DbOperationException When the transaction fails.
+     *
+     */
     protected function invokeTransaction(Transaction $transaction, CommitCallback $call_back)
     {
         try {
@@ -199,6 +222,20 @@ class DbMediator implements DbMediatorInterface
         }
     }
 
+    /**
+     *
+     * Goes through each row in each relation, passing a context object into the given callable to configure the
+     * OperationContext object.
+     *
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param array $extracted_rows Row data from the RowDataExtractor
+     *
+     * @param callable $func function with logic to apply to each row that generates the appropriate OperationContext
+     *
+     * @return array Returns an array of OperationContext objects that contain all data needed to craft a SQl query
+     *
+     */
     protected function getOperationList(AggregateMapperInterface $mapper, $extracted_rows, Callable $func)
     {
         $operation_list = [];
@@ -217,6 +254,16 @@ class DbMediator implements DbMediatorInterface
         return $operation_list;
     }
 
+    /**
+     *
+     * Handles setting the persist order on the given aggregate mapper
+     *
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param $object
+     *
+     * @return void
+     */
     protected function setPersistOrder(AggregateMapperInterface $mapper, $object)
     {
         $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
@@ -227,7 +274,16 @@ class DbMediator implements DbMediatorInterface
         $mapper->setPersistOrder($order);
     }
 
-    protected function updatePrimaryProperty($relation_list, $relation_mapper)
+    /**
+     *
+     * Handles updating primary keys on domain objects based on the values in row data objects.
+     *
+     * @param array $relation_list Arrays of row data indexed by relation name
+     *
+     * @param array $relation_mapper Output from AggregateMapper->getRelationToMapper();
+     *
+     */
+    protected function updatePrimaryProperty(array $relation_list, array $relation_mapper)
     {
         foreach ($relation_list as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];

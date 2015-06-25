@@ -5,6 +5,13 @@ use Aura\SqlMapper_Bundle\Exception\DbOperationException;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
+/**
+ *
+ * Callback that can be passed to the Transaction class for execution.
+ *
+ * Parses the array of OperationContext items and performs the appropriate action on the correct mapper.
+ *
+ */
 class CommitCallback
 {
     /** @var array[OperationContext] */
@@ -19,6 +26,17 @@ class CommitCallback
     /** @var array */
     protected $extracted;
 
+    /**
+     *
+     * @param array $operation_list Array of OperationContext objects in the correct order for execution
+     *
+     * @param PlaceholderResolver $resolver
+     *
+     * @param MapperLocator $locator
+     *
+     * @param array $extracted
+     *
+     */
     public function __construct(
         array &$operation_list,
         PlaceholderResolver $resolver,
@@ -31,6 +49,13 @@ class CommitCallback
         $this->extracted      = $extracted;
     }
 
+    /**
+     *
+     * @return bool Always returns true
+     *
+     * @throws DbOperationException If the operation cannot be executed.
+     *
+     */
     public function __invoke()
     {
         foreach ($this->operation_list as $context) {

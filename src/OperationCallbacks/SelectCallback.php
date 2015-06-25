@@ -6,6 +6,12 @@ use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
+
+/**
+ *
+ * Selects row data objects based on the supplied OperationContext objects in the given order.
+ *
+ */
 class SelectCallback implements SelectCallbackInterface
 {
     /** @var MapperLocator */
@@ -20,6 +26,16 @@ class SelectCallback implements SelectCallbackInterface
     /** @var PlaceholderResolver */
     protected $resolver;
 
+    /**
+     * @param AggregateMapperInterface $mapper
+     *
+     * @param MapperLocator $locator
+     *
+     * @param OperationArranger $arranger
+     *
+     * @param PlaceholderResolver $resolver
+     *
+     */
     public function __construct(
         AggregateMapperInterface $mapper,
         MapperLocator $locator,
@@ -32,6 +48,15 @@ class SelectCallback implements SelectCallbackInterface
         $this->resolver = $resolver;
     }
 
+    /**
+     *
+     * Goes down the given $path selecting all of the row data objects described by given context
+     *
+     * @param array $path An array of OperationContext objects in the correct order for traversal
+     *
+     * @return array
+     *
+     */
     public function __invoke(array $path)
     {
         $results = [];

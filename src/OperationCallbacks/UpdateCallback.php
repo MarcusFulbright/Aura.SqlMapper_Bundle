@@ -3,6 +3,17 @@ namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 class UpdateCallback implements TransactionCallbackInterface
 {
+    /**
+     *
+     * Logic used to decide what operation to perform on root update for a given context object.
+     *
+     * Roots will always be update, leafs can be update or delete accordingly.
+     *
+     * @param OperationContext $context
+     *
+     * @return OperationContext
+     *
+     */
     public function __invoke(OperationContext $context)
     {
         $cache = $context->cache;
