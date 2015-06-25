@@ -149,9 +149,9 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_domain->branch->leaf[] = $leafTwo;
 
         //Alter expected results with this second leaf
-        $this->expected_results['branch.leaf'] = array(
+        $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $leafTwo,
-            'row_data' => (object)array(
+            'row_data' => (object) array(
                 'id' => $leafTwo->leafid,
                 'name' => $leafTwo->leafname,
                 'branchid' => ':branch:branch:0:id'
@@ -277,7 +277,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
     public function testManyRoots()
     {
         //Create second root object
-        $ad2 = $this->aggregate_domain;
+        $ad2 = clone $this->aggregate_domain;
         $ad2->rootid = 2;
         $ad2->rootname = 'Willem';
         $ad2->branch = (object) array(
@@ -343,7 +343,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->expected_results['__root'][0]->row_data->branchid = ':branch:branch:0:id';
 
         //Create second root object
-        $ad2 = $this->aggregate_domain;
+        $ad2 = clone $this->aggregate_domain;
         $ad2->rootid = 2;
         $ad2->rootname = 'Willem';
         $ad2->branch = (object) array(
