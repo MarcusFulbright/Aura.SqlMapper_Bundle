@@ -4,6 +4,7 @@ namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
+use Aura\SqlMapper_Bundle\Transaction;
 
 interface CallbackFactoryInterface
 {
@@ -20,6 +21,9 @@ interface CallbackFactoryInterface
         MapperLocator $locator,
         array $extracted
     );
+
+    /** @return Transaction */
+    public function getTransaction();
 
     /** @return OperationCallbackInterface */
     public function getInsertCallback();

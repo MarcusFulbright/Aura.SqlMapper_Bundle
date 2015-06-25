@@ -2,6 +2,7 @@
 namespace Aura\SqlMapper_Bundle;
 
 use Aura\SqlMapper_Bundle\Exception\DbOperationException;
+use Aura\SqlMapper_Bundle\OperationCallbacks\CallbackFactoryInterface;
 use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 
 /**
@@ -33,20 +34,20 @@ class DbMediator implements DbMediatorInterface
      * @param OperationArranger $operation_arranger
      * @param PlaceholderResolver $placeholder_resolver
      * @param RowDataExtractor $extractor
-     * @param OperationCallbackFactory $callback_factory
+     * @param CallbackFactoryInterface $callback_factory
      */
     public function __construct(
         MapperLocator $locator,
         OperationArranger $operation_arranger,
         PlaceholderResolver $placeholder_resolver,
         RowDataExtractor $extractor,
-        OperationCallbackFactory $callback_factory
+        CallbackFactoryInterface $callback_factory
     ) {
         $this->locator              = $locator;
         $this->operation_arranger   = $operation_arranger;
         $this->placeholder_resolver = $placeholder_resolver;
         $this->extractor            = $extractor;
-        $this->callback_factory = $callback_factory;
+        $this->callback_factory     = $callback_factory;
     }
 
     /**
@@ -59,7 +60,7 @@ class DbMediator implements DbMediatorInterface
      * objects to crawl through a dependency chain built from the relation map to select all leaf tables.
      *
      * @todo Support multiple criteria
-     * @todo possibly clean up the logic in this method, Feels really bulky right now
+     * Context factory and move some of this stuff in there?
      *
      * @param AggregateMapperInterface $mapper
      *
@@ -70,62 +71,32 @@ class DbMediator implements DbMediatorInterface
      * @return array
      *
      */
-    public function select(AggregateMapperInterface $mapper, array $criteria = null)
+    public function select(AggregateMapperInterface $mapper, array $criteria = [])
     {
-        $rows = array();
-        $relation_to_mapper = $mapper->getRelationToMapper();
-        $mapper_name = $relation_to_mapper['__root']['mapper'];
-        $row_mapper = $this->locator->__get($mapper_name);
-        $id_field = $row_mapper->getIdentityField();
-        if ($criteria === null) {
-            //no criteria just grab all the root row_data objects
-            $rows['__root'] = $row_mapper->fetchCollection(
-                $row_mapper->select()
-            );
-            foreach ($rows['__root'] as $row) {
-                $where_in[] = $row->$id_field;
-            }
-        } else {
-            //get the dependency chain to get back to root from the criteria starting place
-            $path_to_root = $this->operation_arranger->getPathToRoot($mapper, $criteria);
-            $ids = array();
-            //go through each relationship and select the primary key and any used join properties.
-            foreach ($path_to_root as $key => $relation) {
-                $mapper_name = $relation_to_mapper[$relation->relation_name]['mapper'];
-                $row_mapper  = $this->locator->__get($mapper_name);
-                $val         = $this->placeholder_resolver->resolve(current($relation->criteria), $ids, $mapper);
-                $fields      = array_merge($relation->fields, array($row_mapper->getIdentityField()));
-                $query       = $row_mapper->selectBy(key($relation->criteria), $val, $fields);
-                $pdo         = $row_mapper->getWriteConnection();
-                $results     = $pdo->fetchAll($query->__toString(), $query->getBindValues());
-                $ids[$relation->relation_name] = $results;
-            }
-            $where_in = array();
-            //build values in a where_in clause that can be used to select all of the appropriate entries
-            foreach ($ids['__root'] as $row) {
-                $where_in[] = $row[$id_field];
-            }
-            //select all of the root row data objects
-            $rows['__root'] = $row_mapper->fetchCollectionBy($id_field, $where_in);
-        }
-        //get the tree that can be used to build out an aggregate object starting at the root
-        $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, array('__root'.'.'.$id_field=>$where_in));
-        //loop over each relationship in this path and select row data objects with the appropriate criteria
-        foreach ($path_from_root as $relation) {
-            $where_in = $this->placeholder_resolver->resolve(current($relation->criteria), $rows, $mapper);
-            $field = key($relation->criteria);
-            $mapper_name = $relation_to_mapper[$relation->relation_name]['mapper'];
-            $row_mapper = $this->locator->__get($mapper_name);
-            $rows[$relation->relation_name] = $row_mapper->fetchCollectionBy($field, $where_in);
-        }
-        return $rows;
+        $path_to_root      = $this->operation_arranger->getPathToRoot($mapper, $criteria);
+        $select_identifier = $this->callback_factory->getIdentifierCallback(
+            $this->locator,
+            $this->operation_arranger,
+            $mapper,
+            $this->placeholder_resolver
+        );
+        $ids = $select_identifier($path_to_root);
+        $primary_field = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper'])->getIdentityField();
+        $criteria = ['__root.'.$primary_field => array_column($ids['__root'], $primary_field)];
+        $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
+        $select = $this->callback_factory->getSelectCallback(
+            $this->locator,
+            $mapper,
+            $this->operation_arranger,
+            $this->placeholder_resolver
+        );
+        $results = $select($path_from_root);
+        return $results;
     }
 
     /**
      *
      * Creates a new representation of the provided object in the DB.
-     *
-     * @todo this is super ugly. It needs some love.
      *
      * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
@@ -138,20 +109,21 @@ class DbMediator implements DbMediatorInterface
      */
     public function create(AggregateMapperInterface $mapper, $obj)
     {
-        //@todo this should get injected somehow
-        $uow = new UnitOfWork($this->locator);
-        $relation_mapper = $mapper->getRelationToMapper();
         if ($mapper->getPersistOrder() === null) {
             $this->setPersistOrder($mapper, $obj);
         }
-        $relation_list = $this->populateUnitOfWork($mapper, $obj, $uow, $this->callback_factory->getInsertCallback());
-        if ($uow->exec() !== false ) {
-            $this->updatePrimaryProperty($relation_list, $relation_mapper);
-            return $obj;
-        } else {
-            $error = $uow->getException();
-            throw new DbOperationException($error->getMessage());
-        }
+        $extracted = $this->extractor->getRowData($obj, $mapper);
+        $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getInsertCallback());
+        $transaction = $this->callback_factory->getTransaction();
+        $commit_callback = $this->callback_factory->getCommitCallback(
+            $operation_list,
+            $this->placeholder_resolver,
+            $this->locator,
+            $extracted
+        );
+        $this->invokeTransaction($transaction, $commit_callback);
+        $this->updatePrimaryProperty($extracted, $mapper->getRelationToMapper());
+        return $obj;
     }
 
     /**
@@ -169,20 +141,21 @@ class DbMediator implements DbMediatorInterface
      */
     public function update(AggregateMapperInterface $mapper, $obj)
     {
-        //@todo this should get injected somehow
-        $uow = new UnitOfWork($this->locator);
-        $relation_mapper = $mapper->getRelationToMapper();
         if ($mapper->getPersistOrder() === null) {
             $this->setPersistOrder($mapper, $obj);
         }
-        $relation_list = $this->populateUnitOfWork($mapper, $obj, $uow, $this->callback_factory->getUpdateCallback());
-        if ($uow->exec() !== false ) {
-            $this->updatePrimaryProperty($relation_list, $relation_mapper);
-            return $obj;
-        } else {
-            $error = $uow->getException();
-            throw new DbOperationException($error->getMessage());
-        }
+        $extracted = $this->extractor->getRowData($obj, $mapper);
+        $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getUpdateCallback());
+        $transaction = $this->callback_factory->getTransaction();
+        $commit_callback = $this->callback_factory->getCommitCallback(
+            $operation_list,
+            $this->placeholder_resolver,
+            $this->locator,
+            $extracted
+        );
+        $this->invokeTransaction($transaction, $commit_callback);
+        $this->updatePrimaryProperty($extracted, $mapper->getRelationToMapper());
+        return $obj;
     }
 
     /**
@@ -200,36 +173,47 @@ class DbMediator implements DbMediatorInterface
      */
     public function delete(AggregateMapperInterface $mapper, $object)
     {
-        //@todo this should get injected somehow
-        $uow = new UnitOfWork($this->locator);
         if ($mapper->getPersistOrder() === null) {
             $this->setPersistOrder($mapper, $object);
         }
-        $this->populateUnitOfWork($mapper, $object, $uow, $this->callback_factory->getDeleteCallback());
-        if ($uow->exec() !== false ) {
-            return true;
-        } else {
-            $error = $uow->getException();
-            throw new DbOperationException($error->getMessage());
+        $extracted = $this->extractor->getRowData($object, $mapper);
+        $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getDeleteCallback());
+        $transaction = $this->callback_factory->getTransaction();
+        $commit_callback = $this->callback_factory->getCommitCallback(
+            $operation_list,
+            $this->placeholder_resolver,
+            $this->locator,
+            $extracted
+        );
+        $this->invokeTransaction($transaction, $commit_callback);
+        return true;
+    }
+
+    protected function invokeTransaction(Transaction $transaction, $call_back)
+    {
+        try {
+            $transaction->__invoke($call_back, $this->locator);
+        } catch (\Exception $e) {
+            throw new DbOperationException($e->getMessage());
         }
     }
 
-    protected function populateUnitOfWork(AggregateMapperInterface $mapper, $object, UnitOfWork $uow, Callable $func)
+    protected function getOperationList(AggregateMapperInterface $mapper, $extracted_rows, Callable $func)
     {
-        $relation_list = $this->extractor->getRowData($object, $mapper);
+        $operation_list = [];
         $relation_mapper = $mapper->getRelationToMapper();
-        foreach ($relation_list as $relation_name => $rows) {
+        foreach ($extracted_rows as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
             $row_mapper = $this->locator->__get($mapper_name);
             $cache = $row_mapper->getRowCache();
             foreach ($rows as $row) {
-                /* @todo this should be done in RowDataExtractor */
-                $row->row_data = (object)$row->row_data;
-                $row_data = $row->row_data;
-                $func($uow, $this->callback_factory->newContext($row_data, $mapper_name, $relation_name, $cache));
+                $data = isset($row->row_data) ? $row->row_data : $row;
+                $operation_list[] = $func(
+                    $this->callback_factory->newContext($data, $mapper_name, $relation_name, $cache)
+                );
             }
         }
-        return $relation_list;
+        return $operation_list;
     }
 
     protected function setPersistOrder(AggregateMapperInterface $mapper, $object)

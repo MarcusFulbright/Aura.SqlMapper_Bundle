@@ -47,10 +47,9 @@ class Transaction
         // retain arguments for the $queries call later, minus $queries itself
         $args = func_get_args();
         array_shift($args);
-
+        $write_connections = $this->getWriteConnections($mapper_locator);
         // try the transaction
         try {
-            $write_connections = $this->getWriteConnections($mapper_locator);
             $this->begin($write_connections);
             $result = call_user_func_array($func, $args);
             $this->commit($write_connections);
