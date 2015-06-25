@@ -32,37 +32,51 @@ class OperationCallbackFactory implements CallbackFactoryInterface
         return new CommitCallback($operation_list, $resolver, $locator, $extracted);
     }
 
+    /**
+     * @param AggregateMapperInterface $mapper
+     * @param MapperLocator $locator
+     * @param OperationArranger $arranger
+     * @param PlaceholderResolver $resolver
+     * @return SelectIdentifierCallback
+     */
     public function getIdentifierCallback(
+        AggregateMapperInterface $mapper,
         MapperLocator $locator,
         OperationArranger $arranger,
-        AggregateMapperInterface $mapper,
         PlaceholderResolver $resolver
     ) {
-        return new SelectIdentifierCallback($locator, $arranger, $mapper, $resolver);
+        return new SelectIdentifierCallback($mapper, $locator, $arranger, $resolver);
     }
 
+    /**
+     * @param MapperLocator $locator
+     * @param AggregateMapperInterface $mapper
+     * @param OperationArranger $arranger
+     * @param PlaceholderResolver $resolver
+     * @return SelectCallback
+     */
     public function getSelectCallback(
-        MapperLocator $locator,
         AggregateMapperInterface $mapper,
+        MapperLocator $locator,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        return new SelectCallback($locator, $mapper, $arranger, $resolver);
+        return new SelectCallback($mapper, $locator, $arranger, $resolver);
     }
 
-    /** @return OperationCallbackInterface */
+    /** @return InsertCallback */
     public function getInsertCallback()
     {
         return new InsertCallback();
     }
 
-    /** @return OperationCallbackInterface */
+    /** @return UpdateCallback */
     public function getUpdateCallback()
     {
         return new UpdateCallback();
     }
 
-    /** @return OperationCallbackInterface */
+    /** @return DeleteCallback */
     public function getDeleteCallback()
     {
         return new DeleteCallback();
