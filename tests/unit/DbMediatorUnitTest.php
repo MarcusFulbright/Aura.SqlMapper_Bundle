@@ -263,7 +263,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this
             ->callback_factory
             ->shouldReceive('getIdentifierCallback')
-            ->with($this->locator, $this->arranger, $this->aggregate_mapper, $this->resolver)
+            ->with($this->aggregate_mapper, $this->locator, $this->arranger, $this->resolver)
             ->andReturn($select_id_callback);
         $select_id_callback
             ->shouldReceive('__invoke')
@@ -283,7 +283,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this
             ->callback_factory
             ->shouldReceive('getSelectCallback')
-            ->with($this->locator, $this->aggregate_mapper, $this->arranger, $this->resolver)
+            ->with($this->aggregate_mapper, $this->locator, $this->arranger, $this->resolver)
             ->andReturn($select_callback);
         $select_callback
             ->shouldReceive('__invoke')

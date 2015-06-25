@@ -76,9 +76,9 @@ class DbMediator implements DbMediatorInterface
     {
         $path_to_root      = $this->operation_arranger->getPathToRoot($mapper, $criteria);
         $select_identifier = $this->callback_factory->getIdentifierCallback(
+            $mapper,
             $this->locator,
             $this->operation_arranger,
-            $mapper,
             $this->placeholder_resolver
         );
         $ids = $select_identifier($path_to_root);
@@ -86,8 +86,8 @@ class DbMediator implements DbMediatorInterface
         $criteria = ['__root.'.$primary_field => array_column($ids['__root'], $primary_field)];
         $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
         $select = $this->callback_factory->getSelectCallback(
-            $this->locator,
             $mapper,
+            $this->locator,
             $this->operation_arranger,
             $this->placeholder_resolver
         );
