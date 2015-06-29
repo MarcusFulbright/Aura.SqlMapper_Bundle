@@ -97,9 +97,17 @@ interface AggregateMapperInterface
      *
      */
     public function lookUpMapper($relation_name);
-    public function lookUpFields($relation_name);
 
-    public function joinAddress($pieces);
+    /**
+     *
+     * Get the fields at the provided relation name.
+     *
+     * @param string $relation_name The relation key to look up on.
+     *
+     * @return array|null the field => property array at the given location.
+     *
+     */
+    public function lookUpFields($relation_name);
 
     /**
      *

@@ -158,7 +158,7 @@ class AggregateBuilder
      *
      * @param string $aggregate_mapper_name The name of the map to retrieve.
      *
-     * @return AggregateMapper
+     * @return AbstractAggregateMapper
      *
      */
     protected function getAggregateMapper($aggregate_mapper_name)

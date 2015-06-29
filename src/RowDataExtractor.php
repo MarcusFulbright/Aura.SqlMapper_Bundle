@@ -44,8 +44,7 @@ class RowDataExtractor {
     protected function getInitialOutputArray(AggregateMapperInterface $mapper)
     {
         $output = array();
-        if (property_exists($mapper, 'persist_order')) {
-            $persist_order = $mapper->getPersistOrder();
+        if ($persist_order = $mapper->getPersistOrder()) {
             foreach ($persist_order as $relation) {
                 $output[$relation->relation_name] = array();
             }
