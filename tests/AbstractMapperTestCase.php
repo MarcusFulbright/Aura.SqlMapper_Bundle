@@ -6,19 +6,25 @@ use Aura\Sql\ExtendedPdo;
 use Aura\Sql\Profiler;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
-use Aura\SqlMapper_Bundle\MapperLocator;
 
-class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
+class AbstractMapperTestCase extends \PHPUnit_Framework_TestCase
 {
-    protected $domainMapper;
-
-    protected $connections;
+    /** @var  ConnectionLocator */
     protected $connection_locator;
-    protected $profiler;
+
     protected $query;
-    protected $object_factory;
+
+    /** @var Filter */
     protected $filter;
+
+    /** @var Profiler */
+    protected $profiler;
+
+    /** @var MapperLocator */
     protected $mapper_locator;
+
+    /** @var  AggregateMapperInterface */
+    protected $aggregate_mapper;
 
     protected $data = [
         'aura_test_table' => [
@@ -70,16 +76,12 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
                 'decode' => 'decode'
             ]
         ]
-
     ];
 
-    protected function setUp()
+    protected function setUpConnection()
     {
-        parent::setUp();
-
-        $profiler = new Profiler;
+        $profiler = new Profiler();
         $this->profiler = $profiler;
-
 
         $this->query = new ConnectedQueryFactory(new QueryFactory('sqlite'));
         $this->filter = new Filter();
@@ -88,7 +90,10 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
             $pdo->setProfiler($profiler);
             return $pdo;
         });
+    }
 
+    protected function setUpMFG()
+    {
         $factories = array();
         foreach ($this->data as $table_name => $info) {
             $g = new FakeGateway(
@@ -101,7 +106,8 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
             $m = new FakeMapper(
                 $g,
                 new ObjectFactory(),
-                $this->filter
+                $this->filter,
+                new RowCache($g->getPrimaryCol())
             );
             $m->setColsFields($info['map']);
 
@@ -109,9 +115,11 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
                 return $m;
             };
         }
-
         $this->mapper_locator = new MapperLocator($factories);
+    }
 
+    protected function loadFixtures()
+    {
         $fixture = new SqliteFixture(
             $this->connection_locator->getWrite(),
             'aura_test_table'
@@ -119,8 +127,22 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $fixture->exec();
     }
 
-    public function testNothing()
+    protected function getAggregateMapper(
+        $factory = null,
+        $relations = ['building', 'building.type', 'floor', 'task', 'task.type']
+    ) {
+        if ($factory === null) {
+            $factory = new ObjectFactory();
+        }
+        $this->aggregate_mapper = new FakeAggregateMapper($factory);
+        call_user_func_array(array($this->aggregate_mapper, "includeRelation"), $relations);
+    }
+
+    protected function setUp()
     {
-        //$agMap = new FakeAggregateMapper();
+        $this->setUpConnection();
+        $this->setUpMFG();
+        $this->loadFixtures();
+        $this->getAggregateMapper();
     }
 }

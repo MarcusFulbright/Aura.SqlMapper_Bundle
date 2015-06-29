@@ -73,7 +73,8 @@ class RowCache implements RowCacheInterface
      * primary identity.
      *
      */
-    public function setIdentity($identity) {
+    public function setIdentity($identity)
+    {
         $this->identity = $identity;
     }
 

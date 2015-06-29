@@ -8,8 +8,8 @@
 
 namespace Aura\SqlMapper_Bundle;
 
-interface DbMediatorInterface {
-
+interface DbMediatorInterface
+{
     /**
      *
      * Creates, organizes, and executes all of the select queries for the mappers touched

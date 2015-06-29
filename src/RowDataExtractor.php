@@ -45,9 +45,9 @@ class RowDataExtractor {
     {
         $output = array();
         if (property_exists($mapper, 'persist_order')) {
-            $persist_order = $mapper->persist_order;
-            foreach ($persist_order as $relation_address) {
-                $output[$relation_address] = array();
+            $persist_order = $mapper->getPersistOrder();
+            foreach ($persist_order as $relation) {
+                $output[$relation->relation_name] = array();
             }
         }
         return $output;
@@ -83,7 +83,7 @@ class RowDataExtractor {
         foreach ($all_relations as $relation_info) {
             if ($this->needsPlaceholder($current_address, $relation_info['relation_name'], $mapper)) {
                 $placeholder = $this->getPlaceholder($relation_info['relation_name'], $mapper, $output);
-                $mapped->base_fields[$placeholder->field] = $placeholder->value;
+                $mapped->base_fields->{$placeholder->field} = $placeholder->value;
             }
         }
 
@@ -214,7 +214,7 @@ class RowDataExtractor {
         $output = array();
         array_walk(
             $reflection->getProperties(),
-            function($property) use(&$output) {
+            function($property) use(&$output, $object) {
                 $property->setAccessible(true);
                 $output[$property->name] = $property->getValue($object);
             }
@@ -238,7 +238,7 @@ class RowDataExtractor {
      */
     protected function getMappedProperties($object, AggregateMapperInterface $mapper, $current_address) {
         $output = new \stdClass();
-        $output->base_fields = array();
+        $output->base_fields = new \stdClass();
         $output->relations = array();
 
         $property_map = $mapper->getPropertyMap();
@@ -250,7 +250,7 @@ class RowDataExtractor {
                 $mapper_address = $property_map[$property_address];
                 $mapper_field = $mapper->separateMapperFromField($mapper_address);
                 $output->base_mapper = $mapper_field->mapper;
-                $output->base_fields[$mapper_field->field] = $value;
+                $output->base_fields->{$mapper_field->field} = $value;
             } elseif (isset($relation_map[$property_address])) {
                 $output->relations[$property_address] = $value;
             }

@@ -151,6 +151,11 @@ abstract class AbstractMapper implements MapperInterface
         return $this->getFieldFromCol($this->gateway->getPrimaryCol());
     }
 
+    public function isAutoPrimary()
+    {
+        return $this->gateway->isAutoPrimary();
+    }
+
     /**
      *
      * Given an individual object, returns its identity field value.
@@ -202,6 +207,16 @@ abstract class AbstractMapper implements MapperInterface
     public function getWriteConnection()
     {
         return $this->gateway->getWriteConnection();
+    }
+
+    /**
+     * Returns the underlying gateway read connection
+     *
+     * @return ExtendedPdoInterface
+     */
+    public function getReadConnection()
+    {
+        return $this->gateway->getReadConnection();
     }
 
     /**
@@ -527,13 +542,17 @@ abstract class AbstractMapper implements MapperInterface
      * Returns a new Select query from the gateway, with field names mapped
      * as aliases on the underlying column names.
      *
+     * @param array|null $fields the fields to select. Selects all fields by default
+     *
      * @return Select
      *
      */
-    public function select()
+    public function select(array $fields = null)
     {
-        $cols = $this->getColsAsFields();
-        return $this->gateway->select($cols);
+        if ($fields === null) {
+            $fields = $this->getColsAsFields();
+        }
+        return $this->gateway->select($fields);
     }
 
     /**
@@ -541,6 +560,8 @@ abstract class AbstractMapper implements MapperInterface
      * Returns a new Select query from the gateway, with field names mapped
      * as aliases on the underlying column names, for a given column and
      * value(s).
+     *
+     * @param array|null $cols an array of the cols to select. Selects all by default
      *
      * @param string $field The field to use for matching.
      *
@@ -550,10 +571,12 @@ abstract class AbstractMapper implements MapperInterface
      * @return Select
      *
      */
-    public function selectBy($field, $val)
+    public function selectBy($field, $val, $cols = null)
     {
         $col = $this->getColFromField($field);
-        $cols = $this->getColsAsFields();
+        if ($cols === null) {
+            $cols = $this->getColsAsFields();
+        }
         return $this->gateway->selectBy($col, $val, $cols);
     }
 

@@ -1,8 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-
-
 class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
 {
 
@@ -13,6 +11,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
     protected $relation_map;
     protected $property_map;
     protected $expected_results;
+    protected $string = 'branch.leaf';
 
     public function setUp()
     {
@@ -36,7 +35,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
             '__root' => array(
                 (object) array(
                     'instance' => $this->aggregate_domain,
-                    'row_data' => array(
+                    'row_data' => (object)array(
                         'id'   => 1,
                         'name' => 'Charles'
                     )
@@ -45,7 +44,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
             'branch' => array(
                 (object) array(
                     'instance' => $this->aggregate_domain->branch,
-                    'row_data' => array(
+                    'row_data' => (object)array(
                         'id'     => 2,
                         'name'   => 'Shirley',
                         'rootid' => ':__root:root:0:id'
@@ -55,7 +54,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
             'branch.leaf' => array(
                 (object) array(
                     'instance' => $this->aggregate_domain->branch->leaf,
-                    'row_data' => array(
+                    'row_data' => (object)array(
                         'id'       => 3,
                         'name'     => 'Erickson',
                         'branchid' => ':branch:branch:0:id'
@@ -108,23 +107,31 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
 
     public function testGetRowData()
     {
-        $this->fake_mapper->persist_order = array('__root', 'branch', 'branch.leaf');
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
         $this->compareResults(
             $results,
             $this->expected_results,
-            $this->fake_mapper->persist_order
+            $this->fake_mapper->getPersistOrder()
         );
     }
 
     public function testGetRowDataShouldRespectPersistOrder()
     {
-        $this->fake_mapper->persist_order = array('__root', 'branch.leaf', 'branch');
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
         $this->compareResults(
             $results,
             $this->expected_results,
-            $this->fake_mapper->persist_order
+            $this->fake_mapper->getPersistOrder()
         );
     }
 
@@ -136,7 +143,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         $this->aggregate_domain->branch->leaf = array($leaf);
 
         //Add another leaf
-        $leafTwo = clone $leaf;
+        $leafTwo = clone($leaf);
         $leafTwo->leafid = 10;
         $leafTwo->leafname = "Leaf TOOO";
         $this->aggregate_domain->branch->leaf[] = $leafTwo;
@@ -144,20 +151,24 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Alter expected results with this second leaf
         $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $leafTwo,
-            'row_data' => array(
+            'row_data' => (object) array(
                 'id' => $leafTwo->leafid,
                 'name' => $leafTwo->leafname,
                 'branchid' => ':branch:branch:0:id'
             )
         );
 
-        $this->fake_mapper->persist_order = array('__root', 'branch.leaf', 'branch');
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
 
         $this->compareResults(
             $results,
             $this->expected_results,
-            $this->fake_mapper->persist_order
+            $this->fake_mapper->getPersistOrder()
         );
     }
 
@@ -177,7 +188,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Alter expected results with this second leaf
         $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $leafTwo,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'id' => $leafTwo->leafid,
                 'name' => $leafTwo->leafname,
                 'branchid' => ':branch:branch:0:id'
@@ -206,7 +217,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Alter expected results with this second branch
         $this->expected_results['branch'][] = (object) array(
             'instance' => $branchTwo,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'id' => $branchTwo->branchid,
                 'name' => $branchTwo->branchname,
                 'rootid' => ':__root:root:0:id'
@@ -216,20 +227,23 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Alter expected results with this third leaf
         $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $leafThree,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'id' => $leafThree->leafid,
                 'name' => $leafThree->leafname,
                 'branchid' => ':branch:branch:1:id'
             )
         );
-
-        $this->fake_mapper->persist_order = array('__root', 'branch', 'branch.leaf',);
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
 
         $this->compareResults(
             $results,
             $this->expected_results,
-            $this->fake_mapper->persist_order
+            $this->fake_mapper->getPersistOrder()
         );
     }
 
@@ -244,9 +258,14 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Alter expected results to include the branchid placeholder on root.
-        unset($this->expected_results['branch'][0]->row_data['rootid']);
-        $this->expected_results['__root'][0]->row_data['branchid'] = ':branch:branch:0:id';
+        unset($this->expected_results['branch'][0]->row_data->rootid);
+        $this->expected_results['__root'][0]->row_data->branchid = ':branch:branch:0:id';
 
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData($this->aggregate_domain, $this->fake_mapper);
         $this->compareResults(
             $results,
@@ -273,14 +292,14 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Change expected output
         $this->expected_results['__root'][] = (object) array(
             'instance' => $ad2,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Willem',
                 'id'   => 2
             )
         );
         $this->expected_results['branch'][] = (object) array(
             'instance' => $ad2->branch,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Chuck',
                 'id'   => 42,
                 'rootid'     => ':__root:root:1:id'
@@ -288,13 +307,18 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
         $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $ad2->branch->leaf,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Sue',
                 'id'   => 15,
                 'branchid' => ':branch:branch:1:id'
             )
         );
 
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData(array($this->aggregate_domain, $ad2), $this->fake_mapper);
 
         $this->compareResults(
@@ -315,8 +339,8 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
 
         //Alter expected results to include the branchid placeholder on root.
-        unset($this->expected_results['branch'][0]->row_data['rootid']);
-        $this->expected_results['__root'][0]->row_data['branchid'] = ':branch:branch:0:id';
+        unset($this->expected_results['branch'][0]->row_data->rootid);
+        $this->expected_results['__root'][0]->row_data->branchid = ':branch:branch:0:id';
 
         //Create second root object
         $ad2 = clone $this->aggregate_domain;
@@ -334,7 +358,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //Change expected output
         $this->expected_results['__root'][] = (object) array(
             'instance' => $ad2,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Willem',
                 'id'   => 2,
                 'branchid' =>':branch:branch:1:id'
@@ -342,20 +366,24 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         );
         $this->expected_results['branch'][] = (object) array(
             'instance' => $ad2->branch,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Chuck',
                 'id'   => 42
             )
         );
         $this->expected_results['branch.leaf'][] = (object) array(
             'instance' => $ad2->branch->leaf,
-            'row_data' => array(
+            'row_data' => (object)array(
                 'name' => 'Sue',
                 'id'   => 15,
                 'branchid' => ':branch:branch:1:id'
             )
         );
-
+        $this->fake_mapper->setPersistOrder(array(
+            (object)array('relation_name' => '__root'),
+            (object)array('relation_name' => 'branch'),
+            (object)array('relation_name' => 'branch.leaf')
+        ));
         $results = $this->row_data_extractor->getRowData(array($this->aggregate_domain, $ad2), $this->fake_mapper);
         $this->compareResults($results, $this->expected_results);
     }
@@ -375,7 +403,7 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         if ($persist_order !== null) {
             foreach ($results as $key => $mapperInfo) {
                 //Ensure order is respected.
-                $this->assertEquals($persist_order[$i], $key);
+                $this->assertEquals($persist_order[$i]->relation_name, $key);
                 $i++;
             }
         }
