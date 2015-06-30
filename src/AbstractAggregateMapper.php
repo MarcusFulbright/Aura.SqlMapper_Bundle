@@ -101,13 +101,10 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
      *
      * }
      *
-     * @return null|array
+     * @return array
      *
      */
-    public function getRelationMap()
-    {
-        return null;
-    }
+    abstract public function getRelationMap();
 
     /**
      *
