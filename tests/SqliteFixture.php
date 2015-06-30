@@ -86,7 +86,7 @@ class SqliteFixture
             ['Donna', 1, 1],
             ['Edna',  1, 2],
             ['Fiona', 1, 3],
-            ['Gina',  2, 1],
+            ['Gina',  null, 1],
             ['Hanna', 2, 2],
             ['Ione',  2, 3],
             ['Julia', 2, 1],

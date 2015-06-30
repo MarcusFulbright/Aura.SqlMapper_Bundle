@@ -243,11 +243,10 @@ class DbMediator implements DbMediatorInterface
         foreach ($extracted_rows as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
             $row_mapper = $this->locator->__get($mapper_name);
-            $cache = $row_mapper->getRowCache();
             foreach ($rows as $row) {
                 $data = isset($row->row_data) ? $row->row_data : $row;
                 $operation_list[] = $func(
-                    $this->callback_factory->newContext($data, $mapper_name, $relation_name, $cache)
+                    $this->callback_factory->newContext($data, $relation_name, $row_mapper)
                 );
             }
         }

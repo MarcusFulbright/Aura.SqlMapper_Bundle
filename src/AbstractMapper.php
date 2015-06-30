@@ -106,14 +106,22 @@ abstract class AbstractMapper implements MapperInterface
 
     /**
      *
-     * Getter for the RowCache object.
+     * Check if a particular bit of row data exists in the db or not.
      *
-     * @return RowCacheInterface
+     * @param (object) $row The row data object we want to check for.
+     *
+     * @return bool
      *
      */
-    public function getRowCache()
+    public function rowExists($row)
     {
-        return $this->cache;
+        if ($this->isAutoPrimary()) {
+            return ($row->{$this->getIdentityField()} !== null);
+        }
+        if ($this->cache && $this->cache->isCached($row)) {
+            return true;
+        }
+        return (bool) $this->fetchObjectBy($this->getIdentityField(), $this->getIdentityValue($row));
     }
 
     /**

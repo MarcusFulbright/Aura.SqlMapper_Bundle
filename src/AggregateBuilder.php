@@ -25,6 +25,15 @@ class AggregateBuilder
 
     /**
      *
+     * Arranges the db mediator output for factory injest.
+     *
+     * @var RowDataArrangerInterface
+     *
+     */
+    protected $row_data_arranger;
+
+    /**
+     *
      * Constructor
      *
      * @param AggregateMapperLocator $aggregate_mapper_locator The locator for
@@ -33,13 +42,18 @@ class AggregateBuilder
      * @param DbMediatorInterface $db_mediator Our query and unit-of-work
      * generator.
      *
+     * @param RowDataArrangerInterface $row_data_arranger The arranger for row
+     * data output by the DbMediator
+     *
      */
     public function __construct(
         AggregateMapperLocator $aggregate_mapper_locator,
-        DbMediatorInterface $db_mediator
+        DbMediatorInterface $db_mediator,
+        RowDataArrangerInterface $row_data_arranger
     ) {
         $this->aggregate_mapper_locator = $aggregate_mapper_locator;
         $this->db_mediator = $db_mediator;
+        $this->row_data_arranger = $row_data_arranger;
     }
 
     /**
@@ -56,7 +70,7 @@ class AggregateBuilder
      * the AggregateMapper
      *
      */
-    public function getCollection($aggregate_mapper_name, array $criteria = null)
+    public function getCollection($aggregate_mapper_name, array $criteria = array())
     {
         $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
         return $aggregate_mapper->newCollection($this->select($aggregate_mapper_name, $criteria));
@@ -76,10 +90,11 @@ class AggregateBuilder
      * AggregateMapper
      *
      */
-    public function getObject($aggregate_mapper_name, array $criteria = null)
+    public function getObject($aggregate_mapper_name, array $criteria = array())
     {
         $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
-        return $aggregate_mapper->newObject($this->select($aggregate_mapper_name, $criteria));
+        $results = $this->select($aggregate_mapper_name, $criteria);
+        return $results ? $aggregate_mapper->newObject($results[0]) : false;
     }
 
     /**
@@ -95,10 +110,13 @@ class AggregateBuilder
      * @return array An arranged array of arranged DB output.
      *
      */
-    public function select($aggregate_mapper_name, array $criteria = null)
+    public function select($aggregate_mapper_name, array $criteria = array())
     {
         $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
-        return $this->db_mediator->select($aggregate_mapper, $criteria);
+        return $this->row_data_arranger->arrangeRowData(
+            $this->db_mediator->select($aggregate_mapper, $criteria),
+            $aggregate_mapper
+        );
     }
 
     /**

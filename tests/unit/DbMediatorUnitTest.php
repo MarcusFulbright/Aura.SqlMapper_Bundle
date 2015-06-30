@@ -156,21 +156,16 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
     protected function handleOperationList($callback)
     {
         $this
-            ->row_mapper
-            ->shouldReceive('getRowCache')
-            ->twice()
-            ->andReturnNull();
-        $this
             ->callback_factory
             ->shouldReceive('newContext')
             ->once()
-            ->with($this->extracted['__root'][0]->row_data, 'fakeRootMapper', '__root', null)
+            ->with($this->extracted['__root'][0]->row_data, '__root', $this->row_mapper)
             ->andReturn($this->context);
         $this
             ->callback_factory
             ->shouldReceive('newContext')
             ->once()
-            ->with($this->extracted['building'][0]->row_data, 'fakeBuildingMapper', 'building', null)
+            ->with($this->extracted['building'][0]->row_data, 'building', $this->row_mapper)
             ->andReturn($this->context);
         $callback
             ->shouldReceive('__invoke')

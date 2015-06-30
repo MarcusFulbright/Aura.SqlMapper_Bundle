@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
+use Aura\SqlMapper_Bundle\MapperInterface;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
@@ -45,16 +46,14 @@ interface CallbackFactoryInterface
 
     /**
      *
-     * @param RowCacheInterface $cache From the appropriate row data mapper
+     * @param MapperInterface $mapper The appropriate row data mapper
      *
      * @param \stdClass $row Object that represents the appropriate row data, can be obtained form Row Data Extractor
-     *
-     * @param string $mapper_name name of the row data mapper
      *
      * @param string $relation_name name of the relation that this row data belongs to according to aggregate map
      *
      * @return OperationContext
      *
      */
-    public function newContext(\stdClass $row, $mapper_name, $relation_name, RowCacheInterface $cache = null);
+    public function newContext(\stdClass $row, $relation_name, MapperInterface $mapper);
 }

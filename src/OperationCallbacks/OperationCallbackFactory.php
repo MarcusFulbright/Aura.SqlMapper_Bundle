@@ -2,6 +2,7 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\MapperInterface;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
@@ -25,7 +26,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
         MapperLocator $locator,
         array $extracted
     ) {
-        return new CommitCallback($operation_list, $resolver, $locator, $extracted);
+        return new CommitCallback($operation_list, $resolver, $extracted);
     }
 
     /**
@@ -73,8 +74,8 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     /**
      * {@inheritdoc}
      */
-    public function newContext(\stdClass $row, $mapper_name, $relation_name, RowCacheInterface $cache = null)
+    public function newContext(\stdClass $row, $relation_name, MapperInterface $mapper)
     {
-        return new OperationContext($row, $mapper_name, $relation_name, $cache);
+        return new OperationContext($row, $relation_name, $mapper);
     }
 }
