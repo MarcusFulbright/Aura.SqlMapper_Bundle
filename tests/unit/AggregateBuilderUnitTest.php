@@ -145,7 +145,7 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($results, $this->aggregate_builder->delete($agg_name, $object));
     }
 
-    public function testGetObject(){
+    public function testFetchObject(){
         $criteria = array('field' => 'value');
         $results = array(array('this' => 'is', 'a' => 'row'));
         $arranged = array(array('this' => 'is', 'an' => 'arranged', 'row' => '!'));
@@ -159,10 +159,10 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
             ->once()
             ->andReturn($object);
 
-        $this->assertEquals($object, $this->aggregate_builder->getObject($agg_name, $criteria));
+        $this->assertEquals($object, $this->aggregate_builder->fetchObject($agg_name, $criteria));
     }
 
-    public function testGetCollection(){
+    public function testFetchCollection(){
         $criteria = array('field' => 'value');
         $results = array(array('this' => 'is', 'a' => 'row'), array('this' => 'too is', 'a' => 'row also'));
         $agg_name = 'MyAwesomeAggregateMapper';
@@ -179,7 +179,7 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
             ->once()
             ->andReturn($object);
 
-        $this->assertEquals($object, $this->aggregate_builder->getCollection($agg_name, $criteria));
+        $this->assertEquals($object, $this->aggregate_builder->fetchCollection($agg_name, $criteria));
     }
 
     // Protected / internal

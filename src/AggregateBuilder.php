@@ -70,7 +70,7 @@ class AggregateBuilder
      * the AggregateMapper
      *
      */
-    public function getCollection($aggregate_mapper_name, array $criteria = array())
+    public function fetchCollection($aggregate_mapper_name, array $criteria = array())
     {
         $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
         return $aggregate_mapper->newCollection($this->select($aggregate_mapper_name, $criteria));
@@ -90,7 +90,7 @@ class AggregateBuilder
      * AggregateMapper
      *
      */
-    public function getObject($aggregate_mapper_name, array $criteria = array())
+    public function fetchObject($aggregate_mapper_name, array $criteria = array())
     {
         $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
         $results = $this->select($aggregate_mapper_name, $criteria);

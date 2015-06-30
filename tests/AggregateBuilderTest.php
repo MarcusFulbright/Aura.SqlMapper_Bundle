@@ -155,9 +155,9 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testGetCollectionNoCriteria()
+    public function testFetchCollectionNoCriteria()
     {
-        $results = $this->aggregate_builder->getCollection('employee');
+        $results = $this->aggregate_builder->fetchCollection('employee');
         $expected = $this->getFullExpectedResults();
 
         $this->assertEquals(
@@ -166,9 +166,9 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testGetCollectionWithBasicCriteria()
+    public function testFetchCollectionWithBasicCriteria()
     {
-        $results = $this->aggregate_builder->getCollection(
+        $results = $this->aggregate_builder->fetchCollection(
             'employee',
             array('id' => 4)
         );
@@ -177,9 +177,9 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $results);
     }
 
-    public function testGetCollectionWithNestedCriteria()
+    public function testFetchCollectionWithNestedCriteria()
     {
-        $results = $this->aggregate_builder->getCollection(
+        $results = $this->aggregate_builder->fetchCollection(
             'employee',
             array('building.id' => 1)
         );
@@ -187,9 +187,9 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $results);
     }
 
-    public function testGetCollectionWithMoreNestedCriteria()
+    public function testFetchCollectionWithMoreNestedCriteria()
     {
-        $results = $this->aggregate_builder->getCollection(
+        $results = $this->aggregate_builder->fetchCollection(
             'employee',
             array('task.type.code' => 'M')
         );
@@ -197,9 +197,9 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $results);
     }
 
-    public function testGetObject()
+    public function testFetchObject()
     {
-        $betty = $this->aggregate_builder->getObject(
+        $betty = $this->aggregate_builder->fetchObject(
             'employee',
             array('id' => 2)
         );
@@ -208,9 +208,19 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected[0], $betty);
     }
 
-    public function testUpdateCycle()
+    public function testFetchObjectWithNestedCriteria()
     {
-        $betty = $this->aggregate_builder->getObject(
+        $betty = $this->aggregate_builder->fetchObject(
+            'employee',
+            array('building.id' => 1)
+        );
+        $expected = $this->getExpectedResults(array(1, 2, 3, 4, 5, 6));
+        $this->assertEquals($expected[0], $betty);
+    }
+
+    public function testUpdate()
+    {
+        $betty = $this->aggregate_builder->fetchObject(
             'employee',
             array('id' => 2)
         );
@@ -218,7 +228,7 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $betty->name = 'Beatrice';
         $this->aggregate_builder->update('employee', $betty);
 
-        $bettyAgain = $this->aggregate_builder->getObject(
+        $bettyAgain = $this->aggregate_builder->fetchObject(
             'employee',
             array('id' => 2)
         );
@@ -228,16 +238,16 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected[0], $bettyAgain);
     }
 
-    public function testDeleteCycle()
+    public function testDelete()
     {
-        $betty = $this->aggregate_builder->getObject(
+        $betty = $this->aggregate_builder->fetchObject(
             'employee',
             array('id' => 2)
         );
 
         $this->aggregate_builder->delete('employee', $betty);
 
-        $bettyAgain = $this->aggregate_builder->getObject(
+        $bettyAgain = $this->aggregate_builder->fetchObject(
             'employee',
             array('id' => 2)
         );
@@ -277,8 +287,37 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
             )
         );
         $this->assertEquals(true, $this->aggregate_builder->create('employee', $jackie));
-        $this->assertEquals(13, $jackie->id);
-
+        $this->assertEquals(
+            (object) array(
+                'id' => '13',
+                'name' => 'Jackie',
+                'building' => (object) array(
+                    'id' => 1,
+                    'name' => 'Bower Street',
+                    'type' => (object) array(
+                        'id' => 1,
+                        'code' => 'NP',
+                        'decode' => 'Non-Profit'
+                    )
+                ),
+                'floor' => (object) array(
+                    'id' => '1',
+                    'name' => 'Reception'
+                ),
+                'task' => array(
+                    (object) array(
+                        'id' => '7',
+                        'name' => 'Review Calendar',
+                        'type' => (object) array(
+                            'id' => '1',
+                            'code' => 'S',
+                            'decode' => 'Scheduling'
+                        )
+                    )
+                )
+            ),
+            $jackie
+        );
     }
 
     /**
