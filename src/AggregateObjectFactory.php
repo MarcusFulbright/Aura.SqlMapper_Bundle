@@ -10,16 +10,17 @@ class AggregateObjectFactory implements ObjectFactoryInterface
 
     public function newObject(array $data = array())
     {
-        $object = (object) $data;
-        foreach ($data as $property => $value) {
-            if ($this->isEmbeddedObject($value)) {
-                $object->property = $this->newObject($value);
-            } elseif (is_array($value)) {
-                $sub_array = array();
-                foreach ($value as $sub_value) {
-                     $sub_array[] = $this->newObject($sub_value);
+        if ($this->isEmbeddedObject($data)) {
+            $object = (object) $data;
+            foreach ($data as $property_name => $property_value) {
+                if(is_array($property_value)) {
+                    $object->$property_name = $this->newObject($property_value);
                 }
-                $object->property = $sub_array;
+            }
+        } else {
+            $object = array();
+            foreach ($data as $array_member) {
+                 $object[] = $this->newObject($array_member);
             }
         }
         return $object;

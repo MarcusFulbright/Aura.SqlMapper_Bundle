@@ -220,10 +220,12 @@ interface MapperInterface
 
     /**
      *
-     * Returns the $cache object, if it is set.
+     * Check if a particular bit of row data exists in the db or not.
      *
-     * @return RowCacheInterface|null
+     * @param (object) $row The row data object we want to check for.
+     *
+     * @return bool
      *
      */
-    public function getRowCache();
+    public function rowExists($row);
 }

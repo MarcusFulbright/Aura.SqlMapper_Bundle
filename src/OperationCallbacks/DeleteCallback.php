@@ -18,9 +18,9 @@ class DeleteCallback implements TransactionCallbackInterface
      */
     public function __invoke(OperationContext $context)
     {
-        $cache = $context->cache;
+        $mapper = $context->mapper;
         $row = $context->row;
-        if ($cache === null || $cache != null && $cache->isCached($row) === true) {
+        if ($mapper->rowExists($row)) {
             $context->method = 'delete';
         }
         return $context;

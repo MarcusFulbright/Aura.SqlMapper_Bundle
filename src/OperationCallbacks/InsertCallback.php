@@ -16,11 +16,11 @@ class InsertCallback implements TransactionCallbackInterface
      */
     public function __invoke(OperationContext $context)
     {
-        $cache = $context->cache;
+        $mapper = $context->mapper;
         $row = $context->row;
-        $is_cached = $cache != null && $cache->isCached($row);
+        $exists = $mapper->rowExists($row);
         $is_root = $context->relation_name === '__root';
-        if ($is_cached && ! $is_root){
+        if ($exists && ! $is_root){
             $context->method = 'update';
         } else {
             $context->method = 'insert';

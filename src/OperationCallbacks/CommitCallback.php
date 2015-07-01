@@ -20,9 +20,6 @@ class CommitCallback
     /** @var PlaceholderResolver */
     protected $resolver;
 
-    /** @var MapperLocator */
-    protected $locator;
-
     /** @var array */
     protected $extracted;
 
@@ -32,20 +29,16 @@ class CommitCallback
      *
      * @param PlaceholderResolver $resolver
      *
-     * @param MapperLocator $locator
-     *
      * @param array $extracted
      *
      */
     public function __construct(
         array &$operation_list,
         PlaceholderResolver $resolver,
-        MapperLocator $locator,
         array $extracted
     ) {
         $this->operation_list = &$operation_list;
         $this->resolver       = $resolver;
-        $this->locator        = $locator;
         $this->extracted      = $extracted;
     }
 
@@ -59,7 +52,7 @@ class CommitCallback
     public function __invoke()
     {
         foreach ($this->operation_list as $context) {
-            $mapper = $this->locator->__get($context->mapper_name);
+            $mapper = $context->mapper;
             $method = $context->method;
             $this->resolver->resolveRowData($context->row, $this->extracted);
             try {

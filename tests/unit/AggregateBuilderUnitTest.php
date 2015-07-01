@@ -15,13 +15,20 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
 
     protected $reflection;
 
+    protected $row_data_arranger;
+
     protected function setUp()
     {
         parent::setUp();
         $this->db_mediator = \Mockery::mock('Aura\SqlMapper_Bundle\DbMediatorInterface');
         $this->aggregate_mapper_locator = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperLocator');
         $this->aggregate_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperInterface');
-        $this->aggregate_builder = new AggregateBuilder($this->aggregate_mapper_locator, $this->db_mediator);
+        $this->row_data_arranger = \Mockery::mock('Aura\SqlMapper_Bundle\RowDataArranger');
+        $this->aggregate_builder = new AggregateBuilder(
+            $this->aggregate_mapper_locator,
+            $this->db_mediator,
+            $this->row_data_arranger
+        );
     }
 
     public function tearDown()
@@ -77,7 +84,7 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
      * @param int $times The number of times we'll get the aggregate mapper
      *
      */
-    protected function crudMethod($methodName, $object, $agg_name, $results, $times = 1)
+    protected function crudMethod($methodName, $object, $agg_name, $results, $times = 1, $arranged = null)
     {
         $this->db_mediator
             ->shouldReceive($methodName)
@@ -90,16 +97,25 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
             ->times($times)
             ->with($agg_name)
             ->andReturn($this->aggregate_mapper);
+
+        if ($methodName === 'select') {
+            $this->row_data_arranger
+                ->shouldReceive('arrangeRowData')
+                ->once()
+                ->with($results, $this->aggregate_mapper)
+                ->andReturn($arranged);
+        }
     }
 
     //Public methods
     public function testSelect()
     {
         $criteria = array('field' => 'value');
-        $results = array('this' => 'is', 'a' => 'row');
+        $results = array(array('this' => 'is', 'a' => 'row'));
+        $arranged = array(array('this' => 'is', 'an' => 'arranged', 'row' => '!'));
         $agg_name = 'MyAwesomeAggregateMapper';
-        $this->crudMethod('select', $criteria, $agg_name, $results);
-        $this->assertEquals($results, $this->aggregate_builder->select($agg_name, $criteria));
+        $this->crudMethod('select', $criteria, $agg_name, $results, 1, $arranged);
+        $this->assertEquals($arranged, $this->aggregate_builder->select($agg_name, $criteria));
     }
 
     public function testUpdate()
@@ -129,23 +145,24 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($results, $this->aggregate_builder->delete($agg_name, $object));
     }
 
-    public function testGetObject(){
+    public function testFetchObject(){
         $criteria = array('field' => 'value');
-        $results = array('this' => 'is', 'a' => 'row');
+        $results = array(array('this' => 'is', 'a' => 'row'));
+        $arranged = array(array('this' => 'is', 'an' => 'arranged', 'row' => '!'));
         $agg_name = 'MyAwesomeAggregateMapper';
         $object = (object) array('test' => 'object');
-        $this->crudMethod('select', $criteria, $agg_name, $results, 2);
+        $this->crudMethod('select', $criteria, $agg_name, $results, 2, $arranged);
 
         $this->aggregate_mapper
             ->shouldReceive('newObject')
-            ->with($results)
+            ->with($arranged[0])
             ->once()
             ->andReturn($object);
 
-        $this->assertEquals($object, $this->aggregate_builder->getObject($agg_name, $criteria));
+        $this->assertEquals($object, $this->aggregate_builder->fetchObject($agg_name, $criteria));
     }
 
-    public function testGetCollection(){
+    public function testFetchCollection(){
         $criteria = array('field' => 'value');
         $results = array(array('this' => 'is', 'a' => 'row'), array('this' => 'too is', 'a' => 'row also'));
         $agg_name = 'MyAwesomeAggregateMapper';
@@ -154,15 +171,15 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
             (object) array('test' => 'otherObject')
         );
 
-        $this->crudMethod('select', $criteria, $agg_name, $results, 2);
+        $rowObject = $this->crudMethod('select', $criteria, $agg_name, $results, 2);
 
         $this->aggregate_mapper
             ->shouldReceive('newCollection')
-            ->with($results)
+            ->with($rowObject)
             ->once()
             ->andReturn($object);
 
-        $this->assertEquals($object, $this->aggregate_builder->getCollection($agg_name, $criteria));
+        $this->assertEquals($object, $this->aggregate_builder->fetchCollection($agg_name, $criteria));
     }
 
     // Protected / internal

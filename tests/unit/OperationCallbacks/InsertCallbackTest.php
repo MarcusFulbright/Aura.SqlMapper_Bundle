@@ -27,27 +27,19 @@ class InsertCallbackTest extends \PHPUnit_Framework_TestCase
         \Mockery::close();
     }
 
-        protected function getContext($cache = true)
+        protected function getContext()
     {
         $context = \Mockery::mock('Aura\SqlMapper_Bundle\OperationCallbacks\OperationContext');
-        $context->cache = $cache == true ? \Mockery::mock('Aura\SqlMapper_Bundle\RowCacheInterface') : null;
-        $context->mapper_name = $this->mapper_name;
+        $context->mapper = \Mockery::mock('Aura\SqlMapper_Bundle\MapperInterface');
         $context->relation_name = $this->relation_name;
         $context->row = $this->row;
         return $context;
     }
 
-    public function testInsertNoCache()
-    {
-        $context = $this->getContext(false);
-        $result = $this->callback->__invoke($context);
-        $this->assertEquals('insert', $result->method);
-    }
-
     public function testInsertInCacheRootStillInsert()
     {
         $context = $this->getContext();
-        $context->cache->shouldReceive('isCached')->with($this->row)->once()->andReturn(true);
+        $context->mapper->shouldReceive('rowExists')->with($this->row)->once()->andReturn(true);
         $result = $this->callback->__invoke($context);
         $this->assertEquals('insert', $result->method);
     }
@@ -56,7 +48,7 @@ class InsertCallbackTest extends \PHPUnit_Framework_TestCase
     {
         $context = $this->getContext();
         $context->relation_name = 'notRoot';
-        $context->cache->shouldReceive('isCached')->with($this->row)->once()->andReturn(true);
+        $context->mapper->shouldReceive('rowExists')->with($this->row)->once()->andReturn(true);
         $result = $this->callback->__invoke($context);
         $this->assertEquals('update', $result->method);
     }

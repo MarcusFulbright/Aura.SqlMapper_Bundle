@@ -90,17 +90,15 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     public function testNewContext()
     {
         $row = (object)['name' => 'Jon', 'age' => 45];
-        $mapper_name = 'Row_Data_Mapper_Name';
         $relation_name = '__root';
-        $cache = \Mockery::mock('Aura\SqlMapper_Bundle\RowCacheInterface');
+        $mapper = \Mockery::mock('Aura\SqlMapper_Bundle\MapperInterface');
 
-        $context = $this->factory->newContext($row, $mapper_name, $relation_name, $cache);
+        $context = $this->factory->newContext($row, $relation_name, $mapper);
         $this->assertInstanceOf(
             'Aura\SqlMapper_Bundle\OperationCallbacks\OperationContext',
             $context);
         $this->assertEquals($row, $context->row);
-        $this->assertEquals($cache, $context->cache);
-        $this->assertEquals($mapper_name, $context->mapper_name);
+        $this->assertEquals($mapper, $context->mapper);
         $this->assertEquals($relation_name, $context->relation_name);
     }
 }
