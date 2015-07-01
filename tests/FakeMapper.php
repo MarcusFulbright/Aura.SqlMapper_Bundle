@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-class FakeMapper extends AbstractMapper
+class FakeMapper extends AbstractRowMapper
 {
     protected $cols_fields = [
         'id'      => 'id',

@@ -72,7 +72,7 @@ class MapperLocator implements IteratorAggregate
      *
      * @param string $name The name of the mapper instance to retrieve.
      *
-     * @return MapperInterface A mapper instance.
+     * @return RowMapperInterface A mapper instance.
      *
      * @throws Exception\NoSuchMapper when an unrecognized mapper name is
      * given.

@@ -67,7 +67,7 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
             'building' => ['mapper' => 'fakeBuildingMapper']
         ];
 
-        $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\MapperInterface');
+        $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperInterface');
         $this->aggregate_mapper->shouldReceive('getRelationToMapper')->once()->andReturn($this->relation_to_mapper);
 
         $this->query = \Mockery::mock('Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery');

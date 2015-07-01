@@ -30,7 +30,7 @@ class UpdateCallbackTest extends \PHPUnit_Framework_TestCase
         protected function getContext()
     {
         $context = \Mockery::mock('Aura\SqlMapper_Bundle\OperationCallbacks\OperationContext');
-        $context->mapper = \Mockery::mock('Aura\SqlMapper_Bundle\MapperInterface');
+        $context->mapper = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperInterface');
         $context->relation_name = $this->relation_name;
         $context->row = $this->row;
         return $context;

@@ -91,7 +91,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $row = (object)['name' => 'Jon', 'age' => 45];
         $relation_name = '__root';
-        $mapper = \Mockery::mock('Aura\SqlMapper_Bundle\MapperInterface');
+        $mapper = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperInterface');
 
         $context = $this->factory->newContext($row, $relation_name, $mapper);
         $this->assertInstanceOf(

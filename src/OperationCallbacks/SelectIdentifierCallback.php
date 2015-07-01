@@ -2,7 +2,7 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\MapperInterface;
+use Aura\SqlMapper_Bundle\RowMapperInterface;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
@@ -75,7 +75,7 @@ class SelectIdentifierCallback implements SelectCallbackInterface
         return $ids;
     }
 
-    protected function runQuery(AbstractConnectedQuery $query, MapperInterface $mapper)
+    protected function runQuery(AbstractConnectedQuery $query, RowMapperInterface $mapper)
     {
         return $mapper->getWriteConnection()->fetchAll($query->__toString(), $query->getBindValues());
     }

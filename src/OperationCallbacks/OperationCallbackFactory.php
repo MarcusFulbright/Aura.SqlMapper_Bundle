@@ -2,7 +2,7 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\MapperInterface;
+use Aura\SqlMapper_Bundle\RowMapperInterface;
 use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
@@ -74,7 +74,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     /**
      * {@inheritdoc}
      */
-    public function newContext(\stdClass $row, $relation_name, MapperInterface $mapper)
+    public function newContext(\stdClass $row, $relation_name, RowMapperInterface $mapper)
     {
         return new OperationContext($row, $relation_name, $mapper);
     }

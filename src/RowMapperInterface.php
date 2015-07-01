@@ -19,7 +19,7 @@ use Aura\SqlMapper_Bundle\Query\Select;
  * @package Aura.SqlMapper_Bundle
  *
  */
-interface MapperInterface
+interface RowMapperInterface
 {
     /**
      *

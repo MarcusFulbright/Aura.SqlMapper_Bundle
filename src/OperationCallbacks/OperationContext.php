@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\MapperInterface;
+use Aura\SqlMapper_Bundle\RowMapperInterface;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
 
 /**
@@ -9,7 +9,7 @@ use Aura\SqlMapper_Bundle\RowCacheInterface;
  */
 class OperationContext
 {
-    /** @var MapperInterface  */
+    /** @var RowMapperInterface  */
     public $mapper;
 
     /** @var \stdClass */
@@ -23,7 +23,7 @@ class OperationContext
 
     /**
      *
-     * @param MapperInterface $mapper The appropriate row data mapper
+     * @param RowMapperInterface $mapper The appropriate row data mapper
      *
      * @param \stdClass $row Object that represents the appropriate row data, can be obtained form Row Data Extractor
      *
@@ -34,7 +34,7 @@ class OperationContext
      * @return OperationContext
      *
      */
-    public function __construct(\stdClass $row, $relation_name, MapperInterface $mapper)
+    public function __construct(\stdClass $row, $relation_name, RowMapperInterface $mapper)
     {
         $this->mapper = $mapper;
         $this->row = $row;

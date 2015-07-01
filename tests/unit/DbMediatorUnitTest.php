@@ -61,7 +61,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AbstractMapper');
+        $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AbstractRowMapper');
 
         $factories = [
             'fakeRootMapper' => function() {return $this->row_mapper;},

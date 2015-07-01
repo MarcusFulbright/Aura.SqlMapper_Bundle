@@ -300,7 +300,7 @@ class UnitOfWork
      *
      * Inserts an individual object via a mapper.
      *
-     * @param AbstractMapper $mapper Insert using this mapper.
+     * @param AbstractRowMapper $mapper Insert using this mapper.
      *
      * @param object $object Insert this individual object.
      *
@@ -309,7 +309,7 @@ class UnitOfWork
      * @return null
      *
      */
-    protected function execInsert(AbstractMapper $mapper, $object, array $info)
+    protected function execInsert(AbstractRowMapper $mapper, $object, array $info)
     {
         $last_insert_id = $mapper->insert($object);
         $this->inserted->attach($object, [
@@ -321,7 +321,7 @@ class UnitOfWork
      *
      * Updates an individual object via a mapper.
      *
-     * @param AbstractMapper $mapper Update using this mapper.
+     * @param AbstractRowMapper $mapper Update using this mapper.
      *
      * @param object $object Update this individual object.
      *
@@ -330,7 +330,7 @@ class UnitOfWork
      * @return null
      *
      */
-    protected function execUpdate(AbstractMapper $mapper, $object, array $info)
+    protected function execUpdate(AbstractRowMapper $mapper, $object, array $info)
     {
         $initial_data = $info['initial_data'];
         $mapper->update($object, $initial_data);
@@ -341,7 +341,7 @@ class UnitOfWork
      *
      * Deletes an individual object via a mapper.
      *
-     * @param AbstractMapper $mapper Delete using this mapper.
+     * @param AbstractRowMapper $mapper Delete using this mapper.
      *
      * @param object $object Delete this individual object.
      *
@@ -350,7 +350,7 @@ class UnitOfWork
      * @return null
      *
      */
-    protected function execDelete(AbstractMapper $mapper, $object, array $info)
+    protected function execDelete(AbstractRowMapper $mapper, $object, array $info)
     {
         $mapper->delete($object);
         $this->deleted->attach($object);
