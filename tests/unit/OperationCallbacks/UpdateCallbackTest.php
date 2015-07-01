@@ -51,4 +51,13 @@ class UpdateCallbackTest extends \PHPUnit_Framework_TestCase
         $result = $this->callback->__invoke($context);
         $this->assertEquals('update', $result->method);
     }
+
+    public function testUpdateCanTriggerInsertForLeaf()
+    {
+        $context = $this->getContext();
+        $context->relation_name = 'notRoot';
+        $context->mapper->shouldReceive('rowExists')->with($this->row)->once()->andReturn(false);
+        $result = $this->callback->__invoke($context);
+        $this->assertEquals('insert', $result->method);
+    }
 }

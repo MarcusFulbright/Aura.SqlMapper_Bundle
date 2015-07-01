@@ -112,9 +112,7 @@ class DbMediator implements DbMediatorInterface
      */
     public function create(AggregateMapperInterface $mapper, $obj)
     {
-        if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $obj);
-        }
+        $this->setPersistOrder($mapper, $obj);
         $extracted = $this->extractor->getRowData($obj, $mapper);
         $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getInsertCallback());
         $transaction = $this->callback_factory->getTransaction();
@@ -148,9 +146,7 @@ class DbMediator implements DbMediatorInterface
      */
     public function update(AggregateMapperInterface $mapper, $obj)
     {
-        if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $obj);
-        }
+        $this->setPersistOrder($mapper, $obj);
         $extracted = $this->extractor->getRowData($obj, $mapper);
         $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getUpdateCallback());
         $transaction = $this->callback_factory->getTransaction();
@@ -186,9 +182,7 @@ class DbMediator implements DbMediatorInterface
      */
     public function delete(AggregateMapperInterface $mapper, $object)
     {
-        if ($mapper->getPersistOrder() === null) {
-            $this->setPersistOrder($mapper, $object);
-        }
+        $this->setPersistOrder($mapper, $object);
         $extracted = $this->extractor->getRowData($object, $mapper);
         $operation_list = $this->getOperationList($mapper, $extracted, $this->callback_factory->getDeleteCallback());
         $transaction = $this->callback_factory->getTransaction();
@@ -265,12 +259,14 @@ class DbMediator implements DbMediatorInterface
      */
     protected function setPersistOrder(AggregateMapperInterface $mapper, $object)
     {
-        $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
-        $primary_key = $root_mapper->getIdentityField();
-        $primary_value = $root_mapper->getIdentityValue($object);
-        $criteria = array($primary_key => $primary_value);
-        $order = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
-        $mapper->setPersistOrder($order);
+        if ($mapper->getPersistOrder() === null) {
+            $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
+            $primary_key = $root_mapper->getIdentityField();
+            $primary_value = $root_mapper->getIdentityValue($object);
+            $criteria = array($primary_key => $primary_value);
+            $order = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
+            $mapper->setPersistOrder($order);
+        }
     }
 
     /**

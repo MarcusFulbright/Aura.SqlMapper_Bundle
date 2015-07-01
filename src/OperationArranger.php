@@ -96,12 +96,7 @@ class OperationArranger
         if ($next_relation['owner'] === true) {
             $ref_field = $next_relation['reference_field'];
             $key = $mapper->joinAddress($relation_name,  $mapper->separateMapperFromField($ref_field)->field);
-            $relation_pieces = explode('.', $relation_name);
-            if (count($relation_pieces) === 1 ) {
-                $value = $mapper->joinAddress(':__root', $next_relation['join_property']);
-            } else {
-                $value = ':'.$relation_name;
-            }
+            $value = $mapper->joinAddress(':__root', $next_relation['join_property']);
         } else {
             $key = $mapper->joinAddress($relation_name, $next_relation['join_property']);
             $relation_pieces = explode('.', $relation_name);

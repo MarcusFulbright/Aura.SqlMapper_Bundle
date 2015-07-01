@@ -59,12 +59,4 @@ class PlaceholderResolver
         }
         return $row_data;
     }
-
-    protected function translateField(AggregateMapperInterface $mapper, $prop_index)
-    {
-        $mapper_address = $mapper->separateMapperFromField(
-            $mapper->getPropertyMap()[$prop_index]
-        );
-        return $mapper_address->field;
-    }
 }

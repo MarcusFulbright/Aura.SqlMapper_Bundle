@@ -345,5 +345,4 @@ class RowDataArrangerUnitTest extends \PHPUnit_Framework_TestCase {
             $results
         );
     }
-
 }

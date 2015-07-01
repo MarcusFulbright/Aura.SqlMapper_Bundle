@@ -410,4 +410,13 @@ class RowDataExtractorUnitTest extends \PHPUnit_Framework_TestCase
         //make sure values match.
         $this->assertEquals($expected, $results);
     }
+
+    public function testGetPropertiesForArray()
+    {
+        $refl = new \ReflectionClass($this->row_data_extractor);
+        $method = $refl->getMethod('getProperties');
+        $method->setAccessible(true);
+        $input = [1,2];
+        $this->assertEquals($input, $method->invokeArgs($this->row_data_extractor, [$input]));
+    }
 }

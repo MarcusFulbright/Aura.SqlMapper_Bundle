@@ -84,4 +84,10 @@ class AggregateMapperLocatorUnitTest extends \PHPUnit_Framework_TestCase
         unset($aml['account']);
         $this->assertEquals(2, count($aml));
     }
+
+    public function testOffsetExists()
+    {
+        $aml = $this->getMapperLocator($this->aggregateMappers);
+        $this->assertTrue($aml->offsetExists('task'));
+    }
 }

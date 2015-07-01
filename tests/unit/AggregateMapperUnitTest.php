@@ -469,4 +469,51 @@ class AggregateMapperUnitTest extends \PHPUnit_Framework_TestCase
             )
         );
     }
+
+    public function testLookUpRelationToMapperFullRelation()
+    {
+        $mapper = $this->getAggregateMapper();
+        $method = $this->getProtectedMethod('lookUpRelationToMapper');
+        $results = $method->invokeArgs($mapper, ['__root']);
+        $this->assertTrue(
+            $this->mapsMatch(
+                $results,
+                array(
+                    'mapper' => 'aura_test_table',
+                    'fields' => array(
+                        'id' => 'id',
+                        'name' => 'name'
+                    ),
+                    'relations' => array()
+                )
+            )
+        );
+    }
+
+    public function testLookUpRelationToMapperNonExistentRelation()
+    {
+        $mapper = $this->getAggregateMapper();
+        $method = $this->getProtectedMethod('lookupRelationToMapper');
+        $this->assertEquals(null, $method->invokeArgs($mapper, ['non-existent']));
+    }
+
+    public function testLookUpMapper()
+    {
+        $mapper = $this->getAggregateMapper();
+        $expected = 'aura_test_table';
+        $this->assertEquals($expected, $mapper->lookUpMapper('__root'));
+    }
+
+    public function testLookUpPropertyNonExistent()
+    {
+        $mapper = $this->getAggregateMapper();
+        $this->assertEquals(null, $mapper->lookUpProperty('does.not.exist'));
+    }
+
+    public function testLookUpRelationNonExistent()
+    {
+        $mapper = $this->getAggregateMapper();
+        $this->assertEquals(null, $mapper->lookUpRelation('does.not.exist'));
+    }
+
 }

@@ -217,4 +217,8 @@ class RowCacheUnitTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(0, count($cache));
     }
 
+    public function testIsCached()
+    {
+        $this->assertEquals(false, $this->cache->isCached($this->newRow('1', 'data')));
+    }
 }
