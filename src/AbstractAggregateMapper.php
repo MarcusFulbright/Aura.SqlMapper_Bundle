@@ -209,9 +209,7 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
         $relation_name = $relation_name ?: $this->root_relation_address;
         $relation_to_mapper = $this->getRelationToMapper();
         if (isset($relation_to_mapper[$relation_name]) && $key === null) {
-            if ($key === null) {
-                return $relation_to_mapper[$relation_name];
-            }
+            return $relation_to_mapper[$relation_name];
         }
         if (isset($relation_to_mapper[$relation_name][$key])) {
             return $relation_to_mapper[$relation_name][$key];
