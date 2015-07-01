@@ -441,12 +441,12 @@ $aggregate_mapper = new CategoryAggregateMapper($aggregate_factory);
 
 $factories = [
     'post_mapper' => $post_mapper,
-    'category_mapper' => $category_mapper
+    'category_row_mapper' => $category_mapper
 ];
 
 $row_locator = new RowMapperLocator($factories);
 
-$aggreagte_mappers = ['category_mapper' => $aggreagte_mapper];
+$aggreagte_mappers = ['category_aggregate_mapper' => $aggreagte_mapper];
 
 $aggregate_locator = new AggregateMapperLocator($aggregate_mappers);
 
@@ -474,7 +474,7 @@ The create action is performed from the perspective of the root table. That row 
 $category = new Category();
 $category->setName('Docs');
 $category->addPost($my_post);
-$aggregate_builder->create($category);
+$aggregate_builder->create('category_aggregate_mapper', $category);
 ?>
 ```
 
@@ -490,11 +490,11 @@ Data can get fetched from the database in several forms: a collection of row obj
 
 $criteria = ['name' => 'Docs'];
 //returns all row data objects grouped together by the aggregate root
-$aggregate_builder->select('category_mapper', $criteria);
+$aggregate_builder->select('category_aggregate_mapper', $criteria);
 //returns a single instantiated aggregate
-$aggregate_builder->fetchObject('category_mapper', $criteria);
+$aggregate_builder->fetchObject('category_aggregate_mapper', $criteria);
 //returns a collection of instantiated aggregates
-$aggregate_builder->fetchCollection('category_mapper', $criteria);
+$aggregate_builder->fetchCollection('category_aggregate_mapper', $criteria);
 ?>
 ```
 
@@ -507,7 +507,7 @@ Updates work similarly to Crates. The root table must be an Update action. All s
 <?php
 
 $category->setName('NewName');
-$aggregate_builder->update($category); 
+$aggregate_builder->update('category_aggregate_mapper', $category); 
 ?>
 ```
 
@@ -519,8 +519,9 @@ Deletes always delete __all__ records in the aggregate. To avoid deleting the po
 
 ```php
 <?php
+//make sure the posts don't get deleted
 $category->posts = null;
-$aggregate_builder->delete($category);
+$aggregate_builder->delete('category_aggregate_mapper', $category);
 ?>
 ```
 
