@@ -205,15 +205,13 @@ class RowDataExtractor {
             return $object;
         }
 
-        if ($object instanceof \stdClass) {
-            return get_object_vars ($object);
-        }
+        $reflection = new \ReflectionObject($object);
+        $properties = $reflection->getProperties();
 
-        $reflection = new \ReflectionClass($object);
         $output = array();
         array_walk(
-            $reflection->getProperties(),
-            function($property) use(&$output, $object) {
+            $properties,
+            function(\ReflectionProperty $property) use(&$output, $object) {
                 $property->setAccessible(true);
                 $output[$property->name] = $property->getValue($object);
             }
