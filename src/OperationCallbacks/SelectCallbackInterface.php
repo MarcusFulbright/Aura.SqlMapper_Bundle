@@ -2,7 +2,7 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
@@ -18,7 +18,7 @@ interface SelectCallbackInterface
     /**
      * @param AggregateMapperInterface $mapper
      *
-     * @param MapperLocator $locator
+     * @param RowMapperLocator $locator
      *
      * e@param OperationArranger $arranger
      *
@@ -27,7 +27,7 @@ interface SelectCallbackInterface
      */
     public function __construct(
         AggregateMapperInterface $mapper,
-        MapperLocator $locator,
+        RowMapperLocator $locator,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     );

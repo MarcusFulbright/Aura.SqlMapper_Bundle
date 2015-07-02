@@ -1,13 +1,13 @@
 <?php
 namespace Aura\SqlMapper_Bundle\unit;
 
-use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationCallbacks\SelectCallback;
 use Mockery\MockInterface;
 
 class SelectCallbackTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var MapperLocator */
+    /** @var RowMapperLocator */
     protected $locator;
 
     /** @var MockInterface */
@@ -33,7 +33,7 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->locator = new MapperLocator([
+        $this->locator = new RowMapperLocator([
             'fakeRootMapper' => function() { return $this->row_mapper;},
             'fakeBuildingMapper' => function () { return $this->row_mapper;}
         ]);

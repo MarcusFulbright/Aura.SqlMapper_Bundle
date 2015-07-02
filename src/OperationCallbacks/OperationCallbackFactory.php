@@ -3,7 +3,7 @@ namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
 use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowCacheInterface;
@@ -23,7 +23,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     public function getCommitCallback(
         array $operation_list,
         PlaceholderResolver $resolver,
-        MapperLocator $locator,
+        RowMapperLocator $locator,
         array $extracted
     ) {
         return new CommitCallback($operation_list, $resolver, $extracted);
@@ -34,7 +34,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
      */
     public function getIdentifierCallback(
         AggregateMapperInterface $mapper,
-        MapperLocator $locator,
+        RowMapperLocator $locator,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
@@ -46,7 +46,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
      */
     public function getSelectCallback(
         AggregateMapperInterface $mapper,
-        MapperLocator $locator,
+        RowMapperLocator $locator,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {

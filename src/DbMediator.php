@@ -15,7 +15,7 @@ use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
  */
 class DbMediator implements DbMediatorInterface
 {
-    /** @var MapperLocator */
+    /** @var RowMapperLocator */
     protected $locator;
 
      /** @var  OperationArranger */
@@ -31,14 +31,14 @@ class DbMediator implements DbMediatorInterface
     protected $callback_factory;
 
     /**
-     * @param MapperLocator $locator
+     * @param RowMapperLocator $locator
      * @param OperationArranger $operation_arranger
      * @param PlaceholderResolver $placeholder_resolver
      * @param RowDataExtractor $extractor
      * @param CallbackFactoryInterface $callback_factory
      */
     public function __construct(
-        MapperLocator $locator,
+        RowMapperLocator $locator,
         OperationArranger $operation_arranger,
         PlaceholderResolver $placeholder_resolver,
         RowDataExtractor $extractor,

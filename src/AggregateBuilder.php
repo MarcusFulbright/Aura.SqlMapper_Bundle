@@ -1,13 +1,11 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-
-class AggregateBuilder
+class AggregateBuilder implements BuilderInterface
 {
-
     /**
      *
-     * An Aggregate Mapper locater.
+     * An Aggregate Mapper locator.
      *
      * @var AggregateMapperLocator
      *
@@ -61,7 +59,7 @@ class AggregateBuilder
      * Returns a collection of the specified aggregate, each member of
      * which matches the provided criteria.
      *
-     * @param  string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param  string $mapper_name The key of the aggregate_mapper.
      *
      * @param  array  $criteria An array of criteria, describing the objects
      * to be returned.
@@ -70,10 +68,10 @@ class AggregateBuilder
      * the AggregateMapper
      *
      */
-    public function fetchCollection($aggregate_mapper_name, array $criteria = array())
+    public function fetchCollection($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
-        return $aggregate_mapper->newCollection($this->select($aggregate_mapper_name, $criteria));
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        return $aggregate_mapper->newCollection($this->select($mapper_name, $criteria));
     }
 
     /**
@@ -81,7 +79,7 @@ class AggregateBuilder
      * Returns a single instance of the specified aggregate that matches
      * the provided criteria.
      *
-     * @param string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param string $mapper_name The key of the aggregate_mapper.
      *
      * @param array $criteria An array of criteria, describing the object
      * to be returned.
@@ -90,10 +88,10 @@ class AggregateBuilder
      * AggregateMapper
      *
      */
-    public function fetchObject($aggregate_mapper_name, array $criteria = array())
+    public function fetchObject($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
-        $results = $this->select($aggregate_mapper_name, $criteria);
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $results = $this->select($mapper_name, $criteria);
         return $results ? $aggregate_mapper->newObject($results[0]) : false;
     }
 
@@ -102,7 +100,7 @@ class AggregateBuilder
      * Executes a select for all of the mappers in the indicated
      * aggregate_mapper.
      *
-     * @param string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param string $mapper_name The key of the aggregate_mapper.
      *
      * @param array $criteria An array of criteria, describing (from the
      * object's perspective) the data to return.
@@ -110,9 +108,9 @@ class AggregateBuilder
      * @return array An arranged array of arranged DB output.
      *
      */
-    public function select($aggregate_mapper_name, array $criteria = array())
+    public function select($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
         return $this->row_data_arranger->arrangeRowData(
             $this->db_mediator->select($aggregate_mapper, $criteria),
             $aggregate_mapper
@@ -123,16 +121,16 @@ class AggregateBuilder
      *
      * Executes an update for the provided object.
      *
-     * @param string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param string $mapper_name The key of the aggregate_mapper.
      *
      * @param mixed $object The aggregate instance to update.
      *
      * @return bool Whether or not the update was successful.
      *
      */
-    public function update($aggregate_mapper_name, $object)
+    public function update($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
         return (bool) $this->db_mediator->update($aggregate_mapper, $object);
     }
 
@@ -140,16 +138,16 @@ class AggregateBuilder
      *
      * Executes an save for the provided object.
      *
-     * @param string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param string $mapper_name The key of the aggregate_mapper.
      *
      * @param mixed $object The aggregate instance to save.
      *
      * @return bool Whether or not the create was successful.
      *
      */
-    public function create($aggregate_mapper_name, $object)
+    public function create($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
         return (bool) $this->db_mediator->create($aggregate_mapper, $object);
     }
 
@@ -157,16 +155,16 @@ class AggregateBuilder
      *
      * Executes a delete for the provided object.
      *
-     * @param string $aggregate_mapper_name The key of the aggregate_mapper.
+     * @param string $mapper_name The key of the aggregate_mapper.
      *
      * @param mixed $object The aggregate instance to delete.
      *
      * @return bool Whether or not the delete was successful.
      *
      */
-    public function delete($aggregate_mapper_name, $object)
+    public function delete($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($aggregate_mapper_name);
+        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
         return (bool) $this->db_mediator->delete($aggregate_mapper, $object);
     }
 
@@ -174,13 +172,13 @@ class AggregateBuilder
      *
      * Resolves an aggregate mapper name to its mapper.
      *
-     * @param string $aggregate_mapper_name The name of the map to retrieve.
+     * @param string $mapper_name The name of the map to retrieve.
      *
      * @return AbstractAggregateMapper
      *
      */
-    protected function getAggregateMapper($aggregate_mapper_name)
+    protected function getAggregateMapper($mapper_name)
     {
-        return $this->aggregate_mapper_locator[$aggregate_mapper_name];
+        return $this->aggregate_mapper_locator[$mapper_name];
     }
 }

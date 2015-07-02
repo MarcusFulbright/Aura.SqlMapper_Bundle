@@ -27,22 +27,22 @@ class Transaction
      *
      * Executes a $queries callable inside an SQL transaction; rolls back on
      * exception, otherwise commits. The callable should use the signature
-     * `function (MapperLocator $mappers)` -- the MapperLocator from this
+     * `function (RowMapperLocator $mappers)` -- the RowMapperLocator from this
      * Transaction is passed into the callable.
      *
      * The return of the callable, or the exception thrown by the callable, may
      * be retrieved via getResult().
      *
      * @param callable $func A callable to execute inside an SQL transaction.
-     * The MapperLocator for this Transaction is passed to the callable as a
+     * The RowMapperLocator for this Transaction is passed to the callable as a
      * function parameter.
      *
-     * @param MapperLocator $mapper_locator A mapper locator for the queries.
+     * @param RowMapperLocator $mapper_locator A mapper locator for the queries.
      *
      * @return bool True if the transaction was committed, false if rolled back.
      *
      */
-    public function __invoke(callable $func, MapperLocator $mapper_locator)
+    public function __invoke(callable $func, RowMapperLocator $mapper_locator)
     {
         // retain arguments for the $queries call later, minus $queries itself
         $args = func_get_args();
@@ -67,7 +67,7 @@ class Transaction
      * @return null
      *
      */
-    protected function getWriteConnections(MapperLocator $mapper_locator)
+    protected function getWriteConnections(RowMapperLocator $mapper_locator)
     {
         $write_connections = new SplObjectStorage;
         foreach ($mapper_locator as $mapper) {

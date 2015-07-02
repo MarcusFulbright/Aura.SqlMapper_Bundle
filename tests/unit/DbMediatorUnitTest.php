@@ -5,7 +5,7 @@ use Mockery\MockInterface;
 
 class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var MapperLocator */
+    /** @var RowMapperLocator */
     protected $locator;
 
     /** @var MockInterface */
@@ -67,7 +67,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
             'fakeRootMapper' => function() {return $this->row_mapper;},
             'fakeBuildingMapper' => function() {return $this->row_mapper;}
         ];
-        $this->locator  = new MapperLocator($factories);
+        $this->locator  = new RowMapperLocator($factories);
         $this->arranger = \Mockery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->resolver = \Mockery::Mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
         $this->extractor = \Mockery::mock('Aura\SqlMapper_Bundle\RowDataExtractor');

@@ -10,6 +10,7 @@
  */
 namespace Aura\SqlMapper_Bundle;
 
+use Aura\Sql\ExtendedPdoInterface;
 use Aura\SqlMapper_Bundle\Query\Select;
 
 /**

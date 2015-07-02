@@ -28,7 +28,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->factory = new OperationCallbackFactory();
 
-        $this->locator = \Mockery::mock('Aura\SqlMapper_Bundle\MapperLocator');
+        $this->locator = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperLocator');
         $this->mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AbstractAggregateMapper');
         $this->arranger = \MOckery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->resolver = \Mockery::mock('Aura\SqlMapper_Bundle\PlaceholderResolver');

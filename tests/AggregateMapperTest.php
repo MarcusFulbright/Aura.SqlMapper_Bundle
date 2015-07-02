@@ -1,8 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-use Aura\SqlMapper_Bundle\ObjectFactory;
-
 class AggregateMapperTest extends \PHPUnit_Framework_TestCase
 {
 

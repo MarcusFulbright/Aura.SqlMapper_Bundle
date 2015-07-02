@@ -31,7 +31,7 @@ class TransactionTest extends \PHPUnit_Framework_TestCase
             new Filter()
         );
 
-        $this->mapper_locator = new MapperLocator([
+        $this->mapper_locator = new RowMapperLocator([
             'fake' => function () use ($mapper) { return $mapper; },
         ]);
 
@@ -53,12 +53,12 @@ class TransactionTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function success(MapperLocator $mapper_locator)
+    public function success(RowMapperLocator $mapper_locator)
     {
         return 'success';
     }
 
-    public function failure(MapperLocator $mapper_locator)
+    public function failure(RowMapperLocator $mapper_locator)
     {
         throw new Exception('failure');
     }

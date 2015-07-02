@@ -2,7 +2,6 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\Exception\DbOperationException;
-use Aura\SqlMapper_Bundle\MapperLocator;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
 /**

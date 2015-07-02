@@ -23,7 +23,7 @@ class MapperLocatorTest extends \PHPUnit_Framework_TestCase
             },
         ];
 
-        $this->mapper_locator = new MapperLocator($factories);
+        $this->mapper_locator = new RowMapperLocator($factories);
     }
 
     protected function tearDown()

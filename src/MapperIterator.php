@@ -14,7 +14,7 @@ use Iterator;
 
 /**
  *
- * An object to allow iteration over the instances in a MapperLocator.
+ * An object to allow iteration over the instances in a RowMapperLocator.
  *
  * @package Aura.SqlMapper_Bundle
  *
@@ -25,14 +25,14 @@ class MapperIterator implements Iterator
      *
      * The mappers over which we are iterating.
      *
-     * @var MapperLocator
+     * @var RowMapperLocator
      *
      */
     protected $mapper_locator;
 
     /**
      *
-     * The keys to iterate over in the MapperLocator object.
+     * The keys to iterate over in the RowMapperLocator object.
      *
      * @var array
      *
@@ -52,12 +52,12 @@ class MapperIterator implements Iterator
      *
      * Constructor.
      *
-     * @param MapperLocator $mapper_locator The MapperLocator object over which to iterate.
+     * @param RowMapperLocator $mapper_locator The RowMapperLocator object over which to iterate.
      *
-     * @param array $keys The keys in the MapperLocator object.
+     * @param array $keys The keys in the RowMapperLocator object.
      *
      */
-    public function __construct(MapperLocator $mapper_locator, array $keys = [])
+    public function __construct(RowMapperLocator $mapper_locator, array $keys = [])
     {
         $this->mapper_locator = $mapper_locator;
         $this->keys = $keys;

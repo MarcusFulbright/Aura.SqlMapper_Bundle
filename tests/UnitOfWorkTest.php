@@ -36,7 +36,7 @@ class UnitOfWorkTest extends \PHPUnit_Framework_TestCase
             new Filter()
         );
 
-        $this->mapper_locator = new MapperLocator([
+        $this->mapper_locator = new RowMapperLocator([
             'fake' => function () { return $this->mapper; },
         ]);
 

@@ -24,10 +24,10 @@ class UnitOfWork
 {
     /**
      *
-     * A MapperLocator for the mappers used to insert, update, and delete
+     * A RowMapperLocator for the mappers used to insert, update, and delete
      * individual objects.
      *
-     * @var MapperLocator
+     * @var RowMapperLocator
      *
      */
     protected $mapper_locator;
@@ -99,10 +99,10 @@ class UnitOfWork
      *
      * Constructor.
      *
-     * @param MapperLocator $mapper_locator The mapper locator.
+     * @param RowMapperLocator $mapper_locator The mapper locator.
      *
      */
-    public function __construct(MapperLocator $mapper_locator)
+    public function __construct(RowMapperLocator $mapper_locator)
     {
         $this->mapper_locator = $mapper_locator;
         $this->objects = new SplObjectStorage;

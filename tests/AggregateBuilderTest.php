@@ -7,7 +7,7 @@ use Aura\Sql\Profiler;
 use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
-use Aura\SqlMapper_Bundle\MapperLocator;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
 
 class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
 {
@@ -116,7 +116,7 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
             };
         }
 
-        $this->mapper_locator = new MapperLocator($factories);
+        $this->mapper_locator = new RowMapperLocator($factories);
 
         $fixture = new SqliteFixture(
             $this->connection_locator->getWrite(),

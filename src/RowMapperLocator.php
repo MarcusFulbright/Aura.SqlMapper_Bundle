@@ -20,7 +20,7 @@ use IteratorAggregate;
  * @package Aura.SqlMapper_Bundle
  *
  */
-class MapperLocator implements IteratorAggregate
+class RowMapperLocator implements IteratorAggregate
 {
     /**
      *

@@ -20,7 +20,7 @@ class AbstractMapperTestCase extends \PHPUnit_Framework_TestCase
     /** @var Profiler */
     protected $profiler;
 
-    /** @var MapperLocator */
+    /** @var RowMapperLocator */
     protected $mapper_locator;
 
     /** @var  AggregateMapperInterface */
@@ -115,7 +115,7 @@ class AbstractMapperTestCase extends \PHPUnit_Framework_TestCase
                 return $m;
             };
         }
-        $this->mapper_locator = new MapperLocator($factories);
+        $this->mapper_locator = new RowMapperLocator($factories);
     }
 
     protected function loadFixtures()
