@@ -246,7 +246,7 @@ class CategoryMapper extends AbstractAggregatemapper
         [
         //name of the property on the aggregate
             'post' => [
-                //the property on the post row data object that represents it's side of the relationship.
+                //the property on the post row data object that represents its side of the relationship.
                 'join_property' => 'id',
                 // where this property exists one level up, in this case on the category.
                 'reference_field' => 'category_mapper.post',
@@ -264,7 +264,7 @@ class CategoryMapper extends AbstractAggregatemapper
 
 ##### Aggregate Factory
 
-This is a simple factory that returns aggregate objects or collections of aggregate objects. The default `AggregateObjectFacotry` simply returns stdClass objects and arrays of stdClass objects for collections. You can change this behavior by extending _objectFactory_ or by implementing _ObjectFactoryInterface_.
+This is a simple factory that returns aggregate objects or collections of aggregate objects. The default `AggregateObjectFactory` simply returns stdClass objects and arrays of stdClass objects for collections. You can change this behavior by extending _objectFactory_ or by implementing _ObjectFactoryInterface_.
 
 This factory differs from the *Row Data Factory* because the Aggregate factory understands how to handle relationships.
 
@@ -332,7 +332,7 @@ $row_locator = new RowMapperLocator($factories);
 
 A [ServiceLocator](https://en.wikipedia.org/wiki/Service_locator_pattern) implementation for loading and retaining multiple aggregate mapper objects. No need to implement this class yourself, just include the following in a bootstrap:
 
-> Putting these objects in a [DI](https://github.com/auraphp/Aura.Di) container is highly encouraged. 
+> Putting these objects in a [Dependency Injection (DI)](https://github.com/auraphp/Aura.Di) container is highly encouraged. 
 
 ```php
 <?php
@@ -357,16 +357,17 @@ use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowDataExtractor;
 use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 
-//used to determine order of transactions based on relationships
+// Used to determine order of transactions based on relationships.
 $arranger = new OperationArranger();
 
-//a placeholder syntax is used for things like auto incrementing keys, this class helps the mediator resolve those placeholders to real values.
+// A placeholder syntax is used for things like auto incrementing keys.
+// This class helps the mediator resolve those placeholders to real values.
 $resolver = new PlaceholderResolver();
 
-//used to break aggregate objects down into row data objects.
+// Used to break aggregate objects down into row data objects.
 $extractor = new RowDataExtractor();
 
-//returns callbacks that compartmentalize specific decisions around persist operations.
+// Returns callbacks that compartmentalize specific decisions around persist operations.
 $callback_factory = new CallbackFactory();
 
 $mediator = new DbMediator(
@@ -381,7 +382,7 @@ $mediator = new DbMediator(
 
 #### Aggregate Builder
 
-The Aggregate Builder represents the point of contact for your application. The API defined here will have everything your application needs to concern it self with. There is nothing for you to implement, just more boilerplate for the bootstrap:
+The Aggregate Builder represents the point of contact for your application. The API defined here will have everything your application needs to concern itself with. There is nothing for you to implement, just more boilerplate for the bootstrap:
 
 
 ```php
@@ -478,7 +479,7 @@ $aggregate_builder->create('category_aggregate_mapper', $category);
 ?>
 ```
 
-> When ever an create action gets performed, either by calling create or update, auto-incrementing keys are updated automatically by reference. Because of this, only a bool is returned to indicate success.
+> Whenever a create action gets performed, either by calling create or update, auto-incrementing keys are updated automatically by reference. Because of this, only a bool is returned to indicate success.
 
 
 #### Read
@@ -501,7 +502,7 @@ $aggregate_builder->fetchCollection('category_aggregate_mapper', $criteria);
 
 #### Update
 
-Updates work similarly to Crates. The root table must be an Update action. All subsequent leaf tables can be *either* inserts *or* updates. The appropriate action will get determined by first checking the row mapper's cache then, if necessary, performing an extra select query.
+Updates work similarly to Creates. The root table must be an Update action. All subsequent leaf tables can be *either* inserts *or* updates. The appropriate action will get determined by first checking the row mapper's cache then, if necessary, performing an extra select query.
 
 ```php
 <?php
@@ -511,11 +512,11 @@ $aggregate_builder->update('category_aggregate_mapper', $category);
 ?>
 ```
 
-> When ever an update action gets performed, either by calling update or create, only the changes to your object are persisted and auto-incrementing keys are updated automatically by reference. Because of this, only a bool is returned to indicate success.
+> Whenever an update action gets performed, either by calling update or create, only the changes to your object are persisted and auto-incrementing keys are updated automatically by reference. Because of this, only a bool is returned to indicate success.
 
 #### Delete
 
-Deletes always delete __all__ records in the aggregate. To avoid deleting the posts associated with the category, we would need to remove the posts form the category before deleting the category. A bool is returned to indicate success.
+Deletes always delete __all__ records in the aggregate. To avoid deleting the posts associated with the category, we would need to remove the posts from the category before deleting the category. A bool is returned to indicate success.
 
 ```php
 <?php
@@ -553,7 +554,7 @@ $row_mapper = new PostRowMapper(
 
 ### Operation Callbacks
 
-The *DbMedaitor* uses callbacks for each CRUD action to determine how to handle them appropriately. The `OperationCallbackFactory` spits out these callable objects for the DbMediator to use. If you want to augment behavior for a particular action, just extend the `OperationCallbackFactory` and inject your own callable object.
+The *DbMediator* uses callbacks for each CRUD action to determine how to handle them appropriately. The `OperationCallbackFactory` spits out these callable objects for the DbMediator to use. If you want to augment behavior for a particular action, just extend the `OperationCallbackFactory` and inject your own callable object.
 
 For Transactions, Create, Update, Delete, your callable must implement the `TransactionCallbackInterface`. For reads, Selects, use the `SelectCallbackInterface`.
 
