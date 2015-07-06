@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-class RowDataBuilder implements BuilderInterface
+class RowObjectBuilder implements BuilderInterface
 {
     /**
      *

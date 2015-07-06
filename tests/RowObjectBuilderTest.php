@@ -6,9 +6,9 @@ use Aura\Sql\ExtendedPdo;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlQuery\QueryFactory;
 
-class RowDataBuilderTest extends \PHPUnit_Framework_TestCase
+class RowObjectBuilderTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var RowDataBuilder */
+    /** @var RowObjectBuilder */
     protected $builder;
 
     protected $betty = [
@@ -41,7 +41,7 @@ class RowDataBuilderTest extends \PHPUnit_Framework_TestCase
         );
         $factories = ['__root' => function() use ($mapper){return $mapper;}];
         $locator = new RowMapperLocator($factories);
-        $this->builder = new RowDataBuilder($locator);
+        $this->builder = new RowObjectBuilder($locator);
     }
 
     public function testFetchCollection()
