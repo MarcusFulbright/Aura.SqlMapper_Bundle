@@ -149,8 +149,30 @@ class RowObjectBuilder implements BuilderInterface
      * @return AbstractRowMapper
      *
      */
-    protected function getRowMapper($mapper_name)
+    public function getRowMapper($mapper_name)
     {
         return $this->row_mapper_locator->__get($mapper_name);
+    }
+
+
+    /**
+     *
+     * Creates a mapper locator populated with the mappers that correspond to the given mapper names.
+     *
+     * @param array $mappers an array of mapper names
+     *
+     * @return RowMapperLocator
+     *
+     */
+    public function getLocatorForMappers(array $mappers)
+    {
+        $factories = [];
+        foreach ($mappers as $mapper_name) {
+            $row_mapper = $this->getRowMapper($mapper_name);
+            $factories[$mapper_name] = function() use ($row_mapper) {
+                return $row_mapper;
+            };
+        }
+        return new RowMapperLocator($factories);
     }
 }
