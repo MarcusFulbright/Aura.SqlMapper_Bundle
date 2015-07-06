@@ -15,8 +15,8 @@ use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
  */
 class DbMediator implements DbMediatorInterface
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var RowObjectBuilder */
+    protected $row_builder;
 
      /** @var  OperationArranger */
     protected $operation_arranger;
@@ -31,20 +31,20 @@ class DbMediator implements DbMediatorInterface
     protected $callback_factory;
 
     /**
-     * @param RowMapperLocator $locator
+     * @param RowObjectBuilder $row_builder
      * @param OperationArranger $operation_arranger
      * @param PlaceholderResolver $placeholder_resolver
      * @param RowDataExtractor $extractor
      * @param CallbackFactoryInterface $callback_factory
      */
     public function __construct(
-        RowMapperLocator $locator,
+        RowOBjectBuilder $row_builder,
         OperationArranger $operation_arranger,
         PlaceholderResolver $placeholder_resolver,
         RowDataExtractor $extractor,
         CallbackFactoryInterface $callback_factory
     ) {
-        $this->locator              = $locator;
+        $this->row_builder          = $row_builder;
         $this->operation_arranger   = $operation_arranger;
         $this->placeholder_resolver = $placeholder_resolver;
         $this->extractor            = $extractor;
@@ -75,17 +75,18 @@ class DbMediator implements DbMediatorInterface
         $path_to_root      = $this->operation_arranger->getPathToRoot($mapper, $criteria);
         $select_identifier = $this->callback_factory->getIdentifierCallback(
             $mapper,
-            $this->locator,
+            $this->row_builder,
             $this->operation_arranger,
             $this->placeholder_resolver
         );
         $ids = $select_identifier($path_to_root);
-        $primary_field = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper'])->getIdentityField();
+        $mapper_name = $mapper->getRelationToMapper()['__root']['mapper'];
+        $primary_field = $this->row_builder->getRowMapper($mapper_name)->getIdentityField();
         $criteria = ['__root.'.$primary_field => array_column($ids['__root'], $primary_field)];
         $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
         $select = $this->callback_factory->getSelectCallback(
             $mapper,
-            $this->locator,
+            $this->row_builder,
             $this->operation_arranger,
             $this->placeholder_resolver
         );
@@ -119,10 +120,10 @@ class DbMediator implements DbMediatorInterface
         $commit_callback = $this->callback_factory->getCommitCallback(
             $operation_list,
             $this->placeholder_resolver,
-            $this->locator,
+            $this->row_builder,
             $extracted
         );
-        $this->invokeTransaction($transaction, $commit_callback);
+        $this->invokeTransaction($transaction, $commit_callback, $this->getRowMapperLocator($mapper));
         $this->updatePrimaryProperty($extracted, $mapper->getRelationToMapper());
         return $obj;
     }
@@ -153,10 +154,10 @@ class DbMediator implements DbMediatorInterface
         $commit_callback = $this->callback_factory->getCommitCallback(
             $operation_list,
             $this->placeholder_resolver,
-            $this->locator,
+            $this->row_builder,
             $extracted
         );
-        $this->invokeTransaction($transaction, $commit_callback);
+        $this->invokeTransaction($transaction, $commit_callback, $this->getRowMapperLocator($mapper));
         $this->updatePrimaryProperty($extracted, $mapper->getRelationToMapper());
         return $obj;
     }
@@ -189,10 +190,10 @@ class DbMediator implements DbMediatorInterface
         $commit_callback = $this->callback_factory->getCommitCallback(
             $operation_list,
             $this->placeholder_resolver,
-            $this->locator,
+            $this->row_builder,
             $extracted
         );
-        $this->invokeTransaction($transaction, $commit_callback);
+        $this->invokeTransaction($transaction, $commit_callback, $this->getRowMapperLocator($mapper));
         return true;
     }
 
@@ -204,13 +205,15 @@ class DbMediator implements DbMediatorInterface
      *
      * @param CommitCallback $call_back
      *
+     * @param RowMapperLocator $locator
+     *
      * @throws DbOperationException When the transaction fails.
      *
      */
-    protected function invokeTransaction(Transaction $transaction, CommitCallback $call_back)
+    protected function invokeTransaction(Transaction $transaction, CommitCallback $call_back, RowMapperLocator $locator)
     {
         try {
-            $transaction->__invoke($call_back, $this->locator);
+            $transaction->__invoke($call_back, $locator);
         } catch (\Exception $e) {
             throw new DbOperationException($e->getMessage());
         }
@@ -236,7 +239,7 @@ class DbMediator implements DbMediatorInterface
         $relation_mapper = $mapper->getRelationToMapper();
         foreach ($extracted_rows as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
-            $row_mapper = $this->locator->__get($mapper_name);
+            $row_mapper = $this->row_builder->getRowMapper($mapper_name);
             foreach ($rows as $row) {
                 $data = isset($row->row_data) ? $row->row_data : $row;
                 $operation_list[] = $func(
@@ -260,7 +263,7 @@ class DbMediator implements DbMediatorInterface
     protected function setPersistOrder(AggregateMapperInterface $mapper, $object)
     {
         if ($mapper->getPersistOrder() === null) {
-            $root_mapper = $this->locator->__get($mapper->getRelationToMapper()['__root']['mapper']);
+            $root_mapper = $this->row_builder->getRowMapper($mapper->getRelationToMapper()['__root']['mapper']);
             $primary_key = $root_mapper->getIdentityField();
             $primary_value = $root_mapper->getIdentityValue($object);
             $criteria = array($primary_key => $primary_value);
@@ -282,7 +285,7 @@ class DbMediator implements DbMediatorInterface
     {
         foreach ($relation_list as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
-            $row_mapper = $this->locator->__get($mapper_name);
+            $row_mapper = $this->row_builder->getRowMapper($mapper_name);
             if ($row_mapper->isAutoPrimary() === true) {
                 $id_field = $row_mapper->getIdentityField();
                 $id_property = $relation_mapper[$relation_name]['fields'][$id_field];
@@ -296,5 +299,21 @@ class DbMediator implements DbMediatorInterface
                 }
             }
         }
+    }
+
+    /**
+     *
+     * Gets a RowMapperLocator for the given Aggregate mapper
+     *
+     * @param AggregateMapperInterface $mapper
+     *
+     * @return RowMapperLocator
+     *
+     */
+    protected function getRowMapperLocator(AggregateMapperInterface $mapper)
+    {
+        return $this->row_builder->getLocatorForMappers(
+            $mapper->getMapperNames()
+        );
     }
 }

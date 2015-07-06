@@ -139,7 +139,7 @@ class AggregateBuilderTest extends \PHPUnit_Framework_TestCase
         );
 
         $this->db_mediator = new DbMediator(
-            $this->mapper_locator,
+            new RowObjectBuilder($this->mapper_locator),
             new OperationArranger(),
             new PlaceholderResolver(),
             new RowDataExtractor(),

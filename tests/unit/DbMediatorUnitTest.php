@@ -5,8 +5,8 @@ use Mockery\MockInterface;
 
 class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var MockInterface */
+    protected $row_builder;
 
     /** @var MockInterface */
     protected $arranger;
@@ -59,15 +59,14 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
     /** @var array */
     protected $operation_list;
 
+    /** @var MockInterface */
+    protected $locator;
+
     public function setUp()
     {
         $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AbstractRowMapper');
-
-        $factories = [
-            'fakeRootMapper' => function() {return $this->row_mapper;},
-            'fakeBuildingMapper' => function() {return $this->row_mapper;}
-        ];
-        $this->locator  = new RowMapperLocator($factories);
+        $this->row_builder  = \Mockery::mock('Aura\SqlMapper_Bundle\RowObjectBuilder');
+        $this->locator = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperLocator');
         $this->arranger = \Mockery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->resolver = \Mockery::Mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
         $this->extractor = \Mockery::mock('Aura\SqlMapper_Bundle\RowDataExtractor');
@@ -140,7 +139,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this->criteria = ['building.type' => 'NP'];
 
         $this->mediator = new DbMediator(
-            $this->locator,
+            $this->row_builder,
             $this->arranger,
             $this->resolver,
             $this->extractor,
@@ -155,6 +154,10 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
 
     protected function handleOperationList($callback)
     {
+        $this
+            ->row_builder
+            ->shouldReceive('getRowMapper')
+            ->andReturn($this->row_mapper);
         $this
             ->callback_factory
             ->shouldReceive('newContext')
@@ -174,7 +177,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
             ->andReturn($this->context);
     }
 
-    public function handleUpdatePrimary()
+    protected function handleUpdatePrimary()
     {
         $this
             ->row_mapper
@@ -201,6 +204,15 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
     protected function handleTransactionCommit()
     {
         $this
+            ->aggregate_mapper
+            ->shouldReceive('getMapperNames')
+            ->andReturn(['fakeRootMapper', 'fakeBuildingMapper']);
+        $this
+            ->row_builder
+            ->shouldReceive('getLocatorForMappers')
+            ->with(['fakeRootMapper', 'fakeBuildingMapper'])
+            ->andReturn($this->locator);
+        $this
             ->callback_factory
             ->shouldReceive('getTransaction')
             ->once()
@@ -210,7 +222,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
             ->callback_factory
             ->shouldReceive('getCommitCallback')
             ->once()
-            ->with($this->operation_list, $this->resolver, $this->locator, $this->extracted)
+            ->with($this->operation_list, $this->resolver, $this->row_builder, $this->extracted)
             ->andReturn($this->commit_callback);
         $this
             ->transaction
@@ -258,13 +270,19 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this
             ->callback_factory
             ->shouldReceive('getIdentifierCallback')
-            ->with($this->aggregate_mapper, $this->locator, $this->arranger, $this->resolver)
+            ->with($this->aggregate_mapper, $this->row_builder, $this->arranger, $this->resolver)
             ->andReturn($select_id_callback);
         $select_id_callback
             ->shouldReceive('__invoke')
             ->once()
             ->with($this->path_to_root)
             ->andReturn($ids);
+        $this
+            ->row_builder
+            ->shouldReceive('getRowMapper')
+            ->with('fakeRootMapper')
+            ->andReturn($this->row_mapper);
+
         $this
             ->row_mapper
             ->shouldReceive('getIdentityField')
@@ -278,7 +296,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
         $this
             ->callback_factory
             ->shouldReceive('getSelectCallback')
-            ->with($this->aggregate_mapper, $this->locator, $this->arranger, $this->resolver)
+            ->with($this->aggregate_mapper, $this->row_builder, $this->arranger, $this->resolver)
             ->andReturn($select_callback);
         $select_callback
             ->shouldReceive('__invoke')

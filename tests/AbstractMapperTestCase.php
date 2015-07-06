@@ -26,6 +26,9 @@ class AbstractMapperTestCase extends \PHPUnit_Framework_TestCase
     /** @var  AggregateMapperInterface */
     protected $aggregate_mapper;
 
+    /** @var RowObjectBuilder */
+    protected $row_builder;
+
     protected $data = [
         'aura_test_table' => [
             'primary' => 'id',
@@ -116,6 +119,7 @@ class AbstractMapperTestCase extends \PHPUnit_Framework_TestCase
             };
         }
         $this->mapper_locator = new RowMapperLocator($factories);
+        $this->row_builder = new RowObjectBuilder($this->mapper_locator);
     }
 
     protected function loadFixtures()

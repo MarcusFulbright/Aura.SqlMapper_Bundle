@@ -435,4 +435,21 @@ abstract class AbstractAggregateMapper implements AggregateMapperInterface
     {
         $this->persist_order = $order;
     }
+
+    /**
+     *
+     * Returns an array of all the mapper names used by this aggregate
+     *
+     * @return array
+     *
+     */
+    public function getMapperNames()
+    {
+        $output = [];
+        foreach ($this->getPropertyMap() as $row_address) {
+            $separated = $this->separateMapperFromField($row_address);
+            $output[] = $separated->mapper;
+        }
+        return array_unique($output);
+    }
 }

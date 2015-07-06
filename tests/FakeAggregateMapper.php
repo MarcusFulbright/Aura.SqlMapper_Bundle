@@ -1,11 +1,6 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-/**
- * [summary].
- *
- * [description]
- */
 class FakeAggregateMapper extends AbstractAggregateMapper
 {
     protected $property_map = [

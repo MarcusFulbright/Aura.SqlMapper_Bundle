@@ -164,4 +164,14 @@ interface AggregateMapperInterface
      *
      */
     public function setPersistOrder(array $order);
+
+
+    /**
+     *
+     * Returns an array of all the mapper names used by this aggregate
+     *
+     * @return array
+     *
+     */
+    public function getMapperNames();
 }

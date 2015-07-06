@@ -14,7 +14,7 @@ class DbMediatorTest extends AbstractMapperTestCase
     {
         parent::setUp();
         $this->mediator = new DbMediator(
-            $this->mapper_locator,
+            $this->row_builder,
             new OperationArranger(),
             new PlaceholderResolver(),
             new RowDataExtractor(),
