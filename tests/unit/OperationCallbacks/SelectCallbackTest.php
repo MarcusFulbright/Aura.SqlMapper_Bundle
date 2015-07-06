@@ -1,14 +1,13 @@
 <?php
 namespace Aura\SqlMapper_Bundle\unit;
 
-use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationCallbacks\SelectCallback;
 use Mockery\MockInterface;
 
 class SelectCallbackTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var MockInterface */
+    protected $row_builder;
 
     /** @var MockInterface */
     protected $arranger;
@@ -28,21 +27,15 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
     /** @var array */
     protected $relation_to_mapper;
 
-    /** @var MockInterface */
-    protected $row_mapper;
-
     public function setUp()
     {
-        $this->locator = new RowMapperLocator([
-            'fakeRootMapper' => function() { return $this->row_mapper;},
-            'fakeBuildingMapper' => function () { return $this->row_mapper;}
-        ]);
+        $this->row_builder = \Mockery::mock('Aura\SqlMapper_Bundle\RowObjectBuilder');
         $this->arranger = \Mockery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->aggregate_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperInterface');
         $this->resolver = \Mockery::mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
         $this->callback = new SelectCallback(
             $this->aggregate_mapper,
-            $this->locator,
+            $this->row_builder,
             $this->arranger,
             $this->resolver
         );
@@ -51,7 +44,6 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
             'building' => ['mapper' => 'fakeBuildingMapper']
         ];
         $this->aggregate_mapper->shouldReceive('getRelationToMapper')->andReturn($this->relation_to_mapper);
-        $this->row_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperInterface');
 
         $this->path_from_root = [
             (object)[
@@ -101,15 +93,15 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
             ->with(':__root.building', ['__root' => $root_results], $this->aggregate_mapper)
             ->andReturn(2);
         $this
-            ->row_mapper
-            ->shouldReceive('fetchCollectionBy')
+            ->row_builder
+            ->shouldReceive('fetchCollection')
             ->once()
-            ->with('id', 1)
+            ->with('fakeRootMapper',['id' =>  1])
             ->andReturn($root_results);
-        $this->row_mapper
-            ->shouldReceive('fetchCollectionBy')
+        $this->row_builder
+            ->shouldReceive('fetchCollection')
             ->once()
-            ->with('id', 2)
+            ->with('fakeBuildingMapper',['id' => 2])
             ->andReturn($building_results);
 
         $this->assertEquals($expected, $this->callback->__invoke($this->path_from_root));

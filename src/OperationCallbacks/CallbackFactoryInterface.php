@@ -2,9 +2,8 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
-use Aura\SqlMapper_Bundle\RowCacheInterface;
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
 use Aura\SqlMapper_Bundle\Transaction;
 
 /**
@@ -18,7 +17,7 @@ interface CallbackFactoryInterface
      *
      * @param PlaceholderResolver $resolver
      *
-     * e@param RowMapperLocator $locator
+     * @param RowObjectBuilder $row_builder
      *
      * @param array $extracted Row Data extracted from the aggregate object using the RowDataExtractor
      *
@@ -28,7 +27,7 @@ interface CallbackFactoryInterface
     public function getCommitCallback(
         array $operation_list,
         PlaceholderResolver $resolver,
-        RowMapperLocator $locator,
+        RowObjectBuilder $row_builder,
         array $extracted
     );
 

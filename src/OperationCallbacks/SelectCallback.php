@@ -2,9 +2,9 @@
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
 use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
 
 
 /**
@@ -14,8 +14,8 @@ use Aura\SqlMapper_Bundle\PlaceholderResolver;
  */
 class SelectCallback implements SelectCallbackInterface
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var RowObjectBuilder */
+    protected $row_builder;
 
     /** @var AggregateMapperInterface */
     protected $mapper;
@@ -29,7 +29,7 @@ class SelectCallback implements SelectCallbackInterface
     /**
      * @param AggregateMapperInterface $mapper
      *
-     * @param RowMapperLocator $locator
+     * @param RowObjectBuilder $row_builder
      *
      * @param OperationArranger $arranger
      *
@@ -38,11 +38,11 @@ class SelectCallback implements SelectCallbackInterface
      */
     public function __construct(
         AggregateMapperInterface $mapper,
-        RowMapperLocator $locator,
+        RowObjectBuilder $row_builder,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        $this->locator  = $locator;
+        $this->row_builder  = $row_builder;
         $this->mapper   = $mapper;
         $this->arranger = $arranger;
         $this->resolver = $resolver;
@@ -64,10 +64,9 @@ class SelectCallback implements SelectCallbackInterface
         foreach ($path as $node) {
             $relation_name = $node->relation_name;
             $mapper_name = $relation_to_mapper[$relation_name]['mapper'];
-            $row_mapper = $this->locator->__get($mapper_name);
             $primary_field = key($node->criteria);
             $vals = $this->resolver->resolve(current($node->criteria), $results, $this->mapper);
-            $results[$relation_name] = $row_mapper->fetchCollectionBy($primary_field, $vals);
+            $results[$relation_name] = $this->row_builder->fetchCollection($mapper_name, [$primary_field => $vals]);
         }
         return $results;
     }

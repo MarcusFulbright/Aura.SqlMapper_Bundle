@@ -7,6 +7,7 @@ use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationArranger;
 use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
 
 /**
  *
@@ -15,8 +16,8 @@ use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
  */
 class SelectIdentifierCallback implements SelectCallbackInterface
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var RowObjectBuilder */
+    protected $row_builder;
 
     /** @var OperationArranger */
     protected $arranger;
@@ -32,14 +33,14 @@ class SelectIdentifierCallback implements SelectCallbackInterface
      */
     public function __construct(
         AggregateMapperInterface $mapper,
-        RowMapperLocator $locator,
+        RowObjectBuilder $row_builder,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        $this->locator  = $locator;
-        $this->arranger = $arranger;
-        $this->mapper   = $mapper;
-        $this->resolver = $resolver;
+        $this->row_builder = $row_builder;
+        $this->arranger    = $arranger;
+        $this->mapper      = $mapper;
+        $this->resolver    = $resolver;
     }
 
     /**
@@ -51,11 +52,11 @@ class SelectIdentifierCallback implements SelectCallbackInterface
     public function __invoke(array $path)
     {
         $relation_to_mapper = $this->mapper->getRelationToMapper();
-        $root_mapper = $this->locator->__get($relation_to_mapper['__root']['mapper']);
+        $root_mapper = $this->row_builder->getRowMapper($relation_to_mapper['__root']['mapper']);
         $root_primary = $root_mapper->getIdentityField();
         $ids = [];
         foreach ($path as $node) {
-            $row_mapper = $this->locator->__get($relation_to_mapper[$node->relation_name]['mapper']);
+            $row_mapper = $this->row_builder->getRowMapper($relation_to_mapper[$node->relation_name]['mapper']);
             $criteria = $node->criteria;
             if ($criteria === null) {
                 $query = $row_mapper->select([$root_primary]);

@@ -13,7 +13,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     protected $factory;
 
     /** @var MockInterface */
-    protected $locator;
+    protected $row_builder;
 
     /** @var MockInterface */
     protected $mapper;
@@ -28,7 +28,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->factory = new OperationCallbackFactory();
 
-        $this->locator = \Mockery::mock('Aura\SqlMapper_Bundle\RowMapperLocator');
+        $this->row_builder = \Mockery::mock('Aura\SqlMapper_Bundle\RowObjectBuilder');
         $this->mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AbstractAggregateMapper');
         $this->arranger = \MOckery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->resolver = \Mockery::mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
@@ -46,7 +46,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertInstanceOf(
             'Aura\SqlMapper_Bundle\OperationCallbacks\CommitCallback',
-            $this->factory->getCommitCallback([], $this->resolver, $this->locator, [])
+            $this->factory->getCommitCallback([], $this->resolver, $this->row_builder, [])
         );
     }
 
@@ -54,7 +54,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertInstanceOf(
             'Aura\SqlMapper_Bundle\OperationCallbacks\SelectIdentifierCallback',
-            $this->factory->getIdentifierCallback($this->mapper, $this->locator, $this->arranger, $this->resolver)
+            $this->factory->getIdentifierCallback($this->mapper, $this->row_builder, $this->arranger, $this->resolver)
         );
     }
 
@@ -62,7 +62,7 @@ class OperationCallbackFactoryTest extends \PHPUnit_Framework_TestCase
     {
         $this->assertInstanceOf(
             'Aura\SqlMapper_Bundle\OperationCallbacks\SelectCallback',
-            $this->factory->getSelectCallback($this->mapper, $this->locator, $this->arranger, $this->resolver)
+            $this->factory->getSelectCallback($this->mapper, $this->row_builder, $this->arranger, $this->resolver)
         );
     }
 

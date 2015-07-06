@@ -1,14 +1,13 @@
 <?php
 namespace Aura\SqlMapper_Bundle\unit;
 
-use Aura\SqlMapper_Bundle\RowMapperLocator;
 use Aura\SqlMapper_Bundle\OperationCallbacks\SelectIdentifierCallback;
 use Mockery\MockInterface;
 
 class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
 {
-    /** @var RowMapperLocator */
-    protected $locator;
+    /** @var MockInterface */
+    protected $row_builder;
 
     /** @var MockInterface */
     protected $arranger;
@@ -36,16 +35,13 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->locator = new RowMapperLocator([
-            'fakeRootMapper' => function() { return $this->row_mapper;},
-            'fakeBuildingMapper' => function () { return $this->row_mapper;}
-        ]);
+        $this->row_builder = \Mockery::Mock('Aura\SqlMapper_Bundle\RowObjectBuilder');
         $this->arranger = \Mockery::mock('Aura\SqlMapper_Bundle\OperationArranger');
         $this->aggregate_mapper = \Mockery::mock('Aura\SqlMapper_Bundle\AggregateMapperInterface');
         $this->resolver = \Mockery::mock('Aura\SqlMapper_Bundle\PlaceholderResolver');
         $this->callback = new SelectIdentifierCallback(
             $this->aggregate_mapper,
-            $this->locator,
+            $this->row_builder,
             $this->arranger,
             $this->resolver
         );
@@ -80,7 +76,25 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
 
     public function testInvokeToRoot()
     {
-        $this->row_mapper->shouldReceive('getIdentityField')->times(3)->andReturn('id');
+        $this
+            ->row_builder
+            ->shouldReceive('getRowMapper')
+            ->with('fakeRootMapper')
+            ->twice()
+            ->andReturn($this->row_mapper);
+        $this
+            ->row_builder
+            ->shouldReceive('getRowMapper')
+            ->with('fakeBuildingMapper')
+            ->once()
+            ->andReturn($this->row_mapper);
+
+        $this
+            ->row_mapper
+            ->shouldReceive('getIdentityField')
+            ->times(3)
+            ->andReturn('id');
+
         $building_results = [
             (object)[
                 'id' => 1,
@@ -149,7 +163,18 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
 
     public function testInvokeOnlyRoot()
     {
-        $this->row_mapper->shouldReceive('getIdentityField')->once()->andReturn('id');
+        $this
+            ->row_builder
+            ->shouldReceive('getRowMapper')
+            ->twice()
+            ->with('fakeRootMapper')
+            ->andReturn($this->row_mapper);
+
+        $this
+            ->row_mapper
+            ->shouldReceive('getIdentityField')
+            ->once()
+            ->andReturn('id');
         $path_to_root =  [
             (object)[
                 'criteria' => null,
