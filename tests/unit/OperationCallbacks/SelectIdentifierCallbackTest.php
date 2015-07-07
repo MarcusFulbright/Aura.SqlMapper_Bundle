@@ -78,13 +78,13 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
     {
         $this
             ->row_builder
-            ->shouldReceive('getRowMapper')
+            ->shouldReceive('getMapper')
             ->with('fakeRootMapper')
             ->twice()
             ->andReturn($this->row_mapper);
         $this
             ->row_builder
-            ->shouldReceive('getRowMapper')
+            ->shouldReceive('getMapper')
             ->with('fakeBuildingMapper')
             ->once()
             ->andReturn($this->row_mapper);
@@ -165,7 +165,7 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
     {
         $this
             ->row_builder
-            ->shouldReceive('getRowMapper')
+            ->shouldReceive('getMapper')
             ->twice()
             ->with('fakeRootMapper')
             ->andReturn($this->row_mapper);

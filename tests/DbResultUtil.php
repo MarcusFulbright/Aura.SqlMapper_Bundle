@@ -230,4 +230,36 @@ trait DbResultUtil
         }
         return $output;
     }
+
+    public function formatRecordToObject(array $data)
+    {
+        if (isset($data['__root'])) {
+            $output = $data['__root'][0];
+        }
+        if (isset($data['floor'])) {
+            $output->floor = $data['floor'][0];
+        }
+        if (isset($data['building'])){
+            $output->building = $data['building'][0];
+        }
+        if (isset($data['building.type'])) {
+            $output->building->type = $data['building.type'][0];
+        }
+        if (isset($data['task'])) {
+            $output->task = $data['task'];
+            foreach ($output->task as $task) {
+                unset($task->userid);
+            }
+        }
+        if (isset($data['task.type'])) {
+            foreach ($data['task.type'] as $type) {
+                foreach ($output->task as $task) {
+                    if ($task->type === $type->code) {
+                        $task->type = $type;
+                    }
+                }
+            }
+        }
+        return $output;
+    }
 }

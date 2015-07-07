@@ -95,12 +95,12 @@ interface RowMapperInterface
      *
      * Instantiates a new individual object from an array of row data.
      *
-     * @param array $data Row data for the individual object.
+     * @param array $row Row data for the individual object.
      *
      * @return mixed
      *
      */
-    public function newObject(array $row = array());
+    public function newObject(array $row = []);
 
     /**
      *
@@ -137,7 +137,7 @@ interface RowMapperInterface
      * @return mixed
      *
      */
-    public function newCollection(array $rows = array());
+    public function newCollection(array $rows = []);
 
     /**
      *

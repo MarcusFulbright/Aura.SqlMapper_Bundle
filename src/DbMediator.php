@@ -81,7 +81,7 @@ class DbMediator implements DbMediatorInterface
         );
         $ids = $select_identifier($path_to_root);
         $mapper_name = $mapper->getRelationToMapper()['__root']['mapper'];
-        $primary_field = $this->row_builder->getRowMapper($mapper_name)->getIdentityField();
+        $primary_field = $this->row_builder->getMapper($mapper_name)->getIdentityField();
         $criteria = ['__root.'.$primary_field => array_column($ids['__root'], $primary_field)];
         $path_from_root = $this->operation_arranger->getPathFromRoot($mapper, $criteria);
         $select = $this->callback_factory->getSelectCallback(
@@ -239,7 +239,7 @@ class DbMediator implements DbMediatorInterface
         $relation_mapper = $mapper->getRelationToMapper();
         foreach ($extracted_rows as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
-            $row_mapper = $this->row_builder->getRowMapper($mapper_name);
+            $row_mapper = $this->row_builder->getMapper($mapper_name);
             foreach ($rows as $row) {
                 $data = isset($row->row_data) ? $row->row_data : $row;
                 $operation_list[] = $func(
@@ -263,7 +263,7 @@ class DbMediator implements DbMediatorInterface
     protected function setPersistOrder(AggregateMapperInterface $mapper, $object)
     {
         if ($mapper->getPersistOrder() === null) {
-            $root_mapper = $this->row_builder->getRowMapper($mapper->getRelationToMapper()['__root']['mapper']);
+            $root_mapper = $this->row_builder->getMapper($mapper->getRelationToMapper()['__root']['mapper']);
             $primary_key = $root_mapper->getIdentityField();
             $primary_value = $root_mapper->getIdentityValue($object);
             $criteria = array($primary_key => $primary_value);
@@ -285,7 +285,7 @@ class DbMediator implements DbMediatorInterface
     {
         foreach ($relation_list as $relation_name => $rows) {
             $mapper_name = $relation_mapper[$relation_name]['mapper'];
-            $row_mapper = $this->row_builder->getRowMapper($mapper_name);
+            $row_mapper = $this->row_builder->getMapper($mapper_name);
             if ($row_mapper->isAutoPrimary() === true) {
                 $id_field = $row_mapper->getIdentityField();
                 $id_property = $relation_mapper[$relation_name]['fields'][$id_field];

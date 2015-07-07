@@ -41,7 +41,7 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function fetchCollection($mapper_name, array $criteria = [])
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         return $row_mapper->fetchCollection($row_mapper->selectBy(key($criteria), current($criteria)));
     }
 
@@ -61,7 +61,7 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function fetchObject($mapper_name, array $criteria = array())
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         return $row_mapper->fetchObject($row_mapper->selectBy(key($criteria), current($criteria)));
     }
 
@@ -80,11 +80,11 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function select($mapper_name, array $criteria = [])
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         if (empty($criteria)) {
-            $query =  $row_mapper->select();
+            $query = $row_mapper->select();
         } else {
-         $query = $row_mapper->selectBy(key($criteria), current($criteria));
+            $query = $row_mapper->selectBy(key($criteria), current($criteria));
         }
         return $row_mapper->getWriteConnection()->fetchAll($query->__toString(), $query->getBindValues());
     }
@@ -102,7 +102,7 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function update($mapper_name, $object)
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         return (bool) $row_mapper->update($object);
     }
 
@@ -119,7 +119,7 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function create($mapper_name, $object)
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         return (bool) $row_mapper->insert($object);
     }
 
@@ -136,7 +136,7 @@ class RowObjectBuilder implements BuilderInterface
      */
     public function delete($mapper_name, $object)
     {
-        $row_mapper = $this->getRowMapper($mapper_name);
+        $row_mapper = $this->getMapper($mapper_name);
         return (bool) $row_mapper->delete($object);
     }
 
@@ -146,18 +146,23 @@ class RowObjectBuilder implements BuilderInterface
      *
      * @param string $mapper_name The name of the map to retrieve.
      *
-     * @return AbstractRowMapper
+     * @return RowMapperInterface || false
      *
      */
-    public function getRowMapper($mapper_name)
+    public function getMapper($mapper_name)
     {
-        return $this->row_mapper_locator->__get($mapper_name);
+        try {
+            return $this->row_mapper_locator->__get($mapper_name);
+        } catch (Exception\NoSuchMapper $e) {
+            return false;
+        }
     }
-
 
     /**
      *
      * Creates a mapper locator populated with the mappers that correspond to the given mapper names.
+     *
+     * @todo throw exception if it can't find a mapperName
      *
      * @param array $mappers an array of mapper names
      *
@@ -168,7 +173,7 @@ class RowObjectBuilder implements BuilderInterface
     {
         $factories = [];
         foreach ($mappers as $mapper_name) {
-            $row_mapper = $this->getRowMapper($mapper_name);
+            $row_mapper = $this->getMapper($mapper_name);
             $factories[$mapper_name] = function() use ($row_mapper) {
                 return $row_mapper;
             };

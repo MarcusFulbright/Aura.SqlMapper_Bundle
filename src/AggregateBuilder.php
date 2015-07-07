@@ -70,7 +70,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function fetchCollection($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         return $aggregate_mapper->newCollection($this->select($mapper_name, $criteria));
     }
 
@@ -90,7 +90,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function fetchObject($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         $results = $this->select($mapper_name, $criteria);
         return $results ? $aggregate_mapper->newObject($results[0]) : false;
     }
@@ -110,7 +110,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function select($mapper_name, array $criteria = array())
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         return $this->row_data_arranger->arrangeRowData(
             $this->db_mediator->select($aggregate_mapper, $criteria),
             $aggregate_mapper
@@ -130,7 +130,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function update($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         return (bool) $this->db_mediator->update($aggregate_mapper, $object);
     }
 
@@ -147,7 +147,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function create($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         return (bool) $this->db_mediator->create($aggregate_mapper, $object);
     }
 
@@ -164,7 +164,7 @@ class AggregateBuilder implements BuilderInterface
      */
     public function delete($mapper_name, $object)
     {
-        $aggregate_mapper = $this->getAggregateMapper($mapper_name);
+        $aggregate_mapper = $this->getMapper($mapper_name);
         return (bool) $this->db_mediator->delete($aggregate_mapper, $object);
     }
 
@@ -174,11 +174,15 @@ class AggregateBuilder implements BuilderInterface
      *
      * @param string $mapper_name The name of the map to retrieve.
      *
-     * @return AbstractAggregateMapper
+     * @return AbstractAggregateMapper || false
      *
      */
-    protected function getAggregateMapper($mapper_name)
+    public function getMapper($mapper_name)
     {
-        return $this->aggregate_mapper_locator[$mapper_name];
+        if ($this->aggregate_mapper_locator->offsetExists($mapper_name)) {
+            return $this->aggregate_mapper_locator[$mapper_name];
+        } else {
+            return false;
+        }
     }
 }

@@ -156,7 +156,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
     {
         $this
             ->row_builder
-            ->shouldReceive('getRowMapper')
+            ->shouldReceive('getMapper')
             ->andReturn($this->row_mapper);
         $this
             ->callback_factory
@@ -279,7 +279,7 @@ class DbMediatorUnitTest extends \PHPUnit_Framework_TestCase
             ->andReturn($ids);
         $this
             ->row_builder
-            ->shouldReceive('getRowMapper')
+            ->shouldReceive('getMapper')
             ->with('fakeRootMapper')
             ->andReturn($this->row_mapper);
 

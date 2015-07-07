@@ -52,11 +52,11 @@ class SelectIdentifierCallback implements SelectCallbackInterface
     public function __invoke(array $path)
     {
         $relation_to_mapper = $this->mapper->getRelationToMapper();
-        $root_mapper = $this->row_builder->getRowMapper($relation_to_mapper['__root']['mapper']);
+        $root_mapper = $this->row_builder->getMapper($relation_to_mapper['__root']['mapper']);
         $root_primary = $root_mapper->getIdentityField();
         $ids = [];
         foreach ($path as $node) {
-            $row_mapper = $this->row_builder->getRowMapper($relation_to_mapper[$node->relation_name]['mapper']);
+            $row_mapper = $this->row_builder->getMapper($relation_to_mapper[$node->relation_name]['mapper']);
             $criteria = $node->criteria;
             if ($criteria === null) {
                 $query = $row_mapper->select([$root_primary]);

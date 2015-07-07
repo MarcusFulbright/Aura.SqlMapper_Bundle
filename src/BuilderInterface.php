@@ -9,58 +9,50 @@ interface BuilderInterface
 {
     /**
      *
-     * Returns a collection of the specified aggregate, each member of
-     * which matches the provided criteria.
+     * Returns a collection of the specified object, each member of which matches the provided criteria.
      *
-     * @param  string $mapper_name The key of the row_mapper.
+     * @param  string $mapper_name The key of the mapper.
      *
-     * @param  array  $criteria An array of criteria, describing the objects
-     * to be returned.
+     * @param  array  $criteria An array of criteria, describing the objects to be returned.
      *
-     * @return mixed An instance of the aggregate collection, as defined by
-     * the AggregateMapper
+     * @return mixed An instance of the object's collection, as defined by its factory
      *
      */
-    public function fetchCollection($mapper_name, array $criteria = array());
+    public function fetchCollection($mapper_name, array $criteria = []);
 
     /**
      *
-     * Returns a single instance of the specified aggregate that matches
-     * the provided criteria.
+     * Returns a single instance of the specified object that matches the provided criteria.
      *
      * @param string $mapper_name The key of the row_mapper.
      *
-     * @param array $criteria An array of criteria, describing the object
-     * to be returned.
+     * @param array $criteria An array of criteria, describing the object to be returned.
      *
-     * @return mixed An instance of the row, as defined by the
-     * RowMapper
+     * @return mixed An instance of the object
      *
      */
-    public function fetchObject($mapper_name, array $criteria = array());
+    public function fetchObject($mapper_name, array $criteria = []);
 
     /**
      *
-     * Executes a select for all of the mappers in the indicated
-     * row_mapper.
+     * Executes a select based on the given criteria for the given mapper based on the given mapper_name.
      *
-     * @param string $mapper_name The key of the row_mapper.
+     * @param string $mapper_name The key of the mapper.
      *
-     * @param array $criteria An array of criteria, describing (from the
-     * object's perspective) the data to return.
+     * @param array $criteria An array of criteria, describing (from the object's perspective) the data to return.
      *
      * @return array An arranged array of arranged DB output.
      *
      */
-    public function select($mapper_name, array $criteria = array());
+    public function select($mapper_name, array $criteria = []);
 
     /**
      *
      * Executes an update for the provided object.
      *
-     * @param string $mapper_name The key of the row_mapper.
+     * @param string $mapper_name The key of the mapper.
      *
-     * @param mixed $object The aggregate instance to update.
+     * @param mixed $object The object instance to update.
      *
      * @return bool Whether or not the update was successful.
      *
@@ -71,9 +63,9 @@ interface BuilderInterface
      *
      * Executes an save for the provided object.
      *
-     * @param string $mapper_name The key of the row_mapper.
+     * @param string $mapper_name The key of the mapper.
      *
-     * @param mixed $object The aggregate instance to save.
+     * @param mixed $object The object instance to save.
      *
      * @return bool Whether or not the create was successful.
      *
@@ -84,12 +76,23 @@ interface BuilderInterface
      *
      * Executes a delete for the provided object.
      *
-     * @param string $mapper_name The key of the row_mapper.
+     * @param string $mapper_name The key of the mapper.
      *
-     * @param mixed $object The aggregate instance to delete.
+     * @param mixed $object The object instance to delete.
      *
      * @return bool Whether or not the delete was successful.
      *
      */
     public function delete($mapper_name, $object);
+
+    /**
+     *
+     * Returns the mapper for the given mapper_name
+     *
+     * @param string $mapper_name
+     *
+     * @return mixed Either a RowMapperInterface or AggregateMapperInterface
+     *
+     */
+    public function getMapper($mapper_name);
 }

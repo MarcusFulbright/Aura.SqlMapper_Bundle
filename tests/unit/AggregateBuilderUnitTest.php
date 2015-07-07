@@ -9,6 +9,7 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
 
     protected $aggregate_mapper_locator;
 
+    /** @var AggregateBuilder */
     protected $aggregate_builder;
 
     protected $aggregate_mapper;
@@ -91,6 +92,12 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
             ->once()
             ->with($this->aggregate_mapper, $object)
             ->andReturn($results);
+
+        $this->aggregate_mapper_locator
+            ->shouldReceive('offsetExists')
+            ->times($times)
+            ->with($agg_name)
+            ->andReturn(true);
 
         $this->aggregate_mapper_locator
             ->shouldReceive('offsetGet')
@@ -185,7 +192,6 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
     // Protected / internal
     public function testGetAggregateMapper()
     {
-        $method = $this->getProtectedMethod('getAggregateMapper');
         $mappers = array(
             'one' => 'haha',
             'two' => 'monkeybrain',
@@ -194,11 +200,16 @@ class AggregateBuilderUnitTest extends \PHPUnit_Framework_TestCase
 
         foreach($mappers as $name => $return) {
             $this->aggregate_mapper_locator
+                ->shouldReceive('offsetExists')
+                ->with($name)
+                ->once()
+                ->andReturn(true);
+            $this->aggregate_mapper_locator
                 ->shouldReceive('offsetGet')
                 ->with($name)
                 ->once()
                 ->andReturn($return);
-            $this->assertEquals($return, $method->invokeArgs($this->aggregate_builder, array($name)));
+            $this->assertEquals($return, $this->aggregate_builder->getMapper($name));
         }
 
     }
