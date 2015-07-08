@@ -177,6 +177,39 @@ class Post
 
 #### bootstrap
 
+##### Row_Mapper_Locator
+
+A [ServiceLocator](https://en.wikipedia.org/wiki/Service_locator_pattern) implementation for loading and retaining multiple mapper objects. No need to implement this class yourself, just include the following in a bootstrap:
+
+
+```php
+<?php
+use Aura\SqlMapper_Bundle\RowMapperLocator;
+
+$factories = [
+    'post_mapper' => $post_row_mapper,
+];
+
+$row_locator = new RowMapperLocator($factories);
+
+?>
+```
+
+
+#### Row_Object_Builder
+
+The Row Data builder is responsible for maintaining the externally facing API. Your application can interact with it, the *Aggregate Builder*, or the *Domain Builder* interchangeably. There is nothing for you to implement here, just more boilerplate to add to your bootstrap:
+
+
+```php
+<?php
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
+
+$row_builder = new RowObjectBuilder($row_mapper_locator);
+?>
+```
+
+
 The boot strap code for the row data manufacturing layer looks like this:
 
 
@@ -188,6 +221,8 @@ use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
 use Aura\SqlMapper_Bundle\Filter;
 use Aura\SqlQuery\QueryFactory;
 use Aura\Sql\Profiler;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
 
 //optional for debugging
 $profiler = new Profiler();
@@ -206,6 +241,14 @@ $gateway = new PostGateway($connection_locator, $query, $gateway_filter);
 $object_factory = new PostFactory();
 $mapper_filter = new Filter();
 $mapper = new PostMapper($gateway, $object_factory, $mapper_filter);
+
+$factories = [
+    'post_mapper' => $post_row_mapper,
+];
+
+$row_locator = new RowMapperLocator($factories);
+
+$row_builder = new RowObjectBuilder($row_mapper_locator);
 ?>
 ```
 
@@ -309,24 +352,6 @@ class CategoryFactory implements ObjectFactoryInterface
 
 #### Bootstrap
 
-##### Row_Mapper_Locator
-
-A [ServiceLocator](https://en.wikipedia.org/wiki/Service_locator_pattern) implementation for loading and retaining multiple mapper objects. No need to implement this class yourself, just include the following in a bootstrap:
-
-
-```php
-<?php
-use Aura\SqlMapper_Bundle\RowMapperLocator;
-
-$factories = [
-    'post_mapper' => $post_row_mapper,
-    'category_mapper' => $category_row_mapper
-];
-
-$row_locator = new RowMapperLocator($factories);
-
-?>
-```
 
 ##### Aggregate Mapper Locator
 
@@ -382,7 +407,7 @@ $mediator = new DbMediator(
 
 #### Aggregate Builder
 
-The Aggregate Builder represents the point of contact for your application. The API defined here will have everything your application needs to concern itself with. There is nothing for you to implement, just more boilerplate for the bootstrap:
+The Aggregate Builder is responsible for maintaining the externally facing API. Your application can interact with it, the *Row Builder*, or the *Domain Builder* interchangeably. There is nothing for you to implement here, just more boilerplate to add to your bootstrap:
 
 
 ```php
@@ -394,7 +419,7 @@ $aggregate_builder = new AggregateBuilder($aggregate_mapper_locator, $db_mediato
 ```
 
 
-### Complete Bootstrap Example:
+### Aggregate Bootstrap Example:
 
 ```php
 <?php
@@ -411,6 +436,8 @@ use Aura\SqlMapper_Bundle\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\RowDataExtractor;
 use Aura\SqlMapper_Bundle\OperationCallbacks\OperationCallbackFactory;
 use Aura\SqlMapper_Bundle\AggregateBuilder;
+use Aura\SqlMapper_Bundle\RowMapperLocator;
+use Aura\SqlMapper_Bundle\RowObjectBuilder;
 
 //optional for debugging
 $profiler = new Profiler();
@@ -440,12 +467,14 @@ $category_mapper = new CategoryRowMapper($category_gateway, $category_factory, $
 $aggregate_factory = new CategoryFacotry();
 $aggregate_mapper = new CategoryAggregateMapper($aggregate_factory);
 
-$factories = [
+$row_factories = [
     'post_mapper' => $post_mapper,
     'category_row_mapper' => $category_mapper
 ];
 
-$row_locator = new RowMapperLocator($factories);
+$row_locator = new RowMapperLocator($row_factories);
+
+$row_builder = new RowObjectBuilder($row_locator);
 
 $aggreagte_mappers = ['category_aggregate_mapper' => $aggreagte_mapper];
 
@@ -462,9 +491,25 @@ $aggregate_builder = new AggregateBuilder($aggregate_mapper_locator, $db_mediato
 ?>
 ```
 
-### Working with Aggregates
 
-With all the bootstrap code in place, you can perform CRUD actions on aggregates in the following manner:
+### Domain Builder
+
+Your application might use a combination of *Aggregate* and *Row* object to perform its tasks. Instead of having to concern yourself with what type of object you're working with and always using the correct builder, you can use the *Domain Builder*, a thin layer that wraps around the *Aggregate* and *Row* builders. Nothing to implement here, just more bootstrap boilerplate:
+
+```php
+<?
+use Aura\SqlMapper_Bundle\DomainBuilder;
+
+$domain_builder = new DomainBuilder($aggregate_builder, $row_builder);
+?>
+```
+
+
+### Working with Builders
+
+With all the bootstrap code in place, you can perform CRUD actions on aggregate and row objects. The following examples use the *Aggregate Builder*, however, it implements the same *BuidlerInterface* as the *Row Builder* and the *Domain Builder*. This allows all 3 builder classes to be used interchangeably. 
+
+> Note: When using the Domain Builder, the $mapper_name argument can be **either** an aggregate mapper or row mapper. In the event of a naming collision, the Domain Builder will use the aggregate mapper.
 
 #### Create
 
@@ -527,6 +572,7 @@ $aggregate_builder->delete('category_aggregate_mapper', $category);
 ```
 
 
+
 ### Row Data Cache
 
 To improve performance, a caching mechanism can be used at the row data layer. The default `RowCache` employs a time to live and caches row data objects in memory using [spl object storage](http://php.net/manual/en/class.splobjectstorage.php). The `RowCacheInterface` allows you to build cache objects for any other caching mechanism you choose. These cache objects exist on the row mapper level and the row mappers query the cache before querying against the DB.
@@ -565,7 +611,7 @@ This package comes with a set of known constraints:
 * `AggregateBuilder::Select` & `AggregateBuilder::FetchObject` & `AggregateBuilderFetchCollection` can only take a single key value pair for the criteria argument. 
 * Delete statements assume that everything on the aggregate getting passed in needs to get deleted from the DB. 
 * Currently, individual queries for each row data object per aggregate are performed. In other words, no joins are used. This allows Aggregates to be composed of data from separate databases using different database connections. However, performance could still be optimized by grouping queries based on their connection.
-* Row Data objects are essentially second class citizens behind Aggregate objects. You application can work with Row Data objects, you would just use the row data mappers in place of the Aggregate Builder. There is no way to type hint for both and could lead to duplicate code in your application.
+
 
 
 

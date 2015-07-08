@@ -23,7 +23,7 @@ class DomainObjectBuilder implements BuilderInterface
     public function __construct(AggregateBuilder $aggregate_builder, RowObjectBuilder $row_builder)
     {
         $this->aggregate_builder = $aggregate_builder;
-        $this->row_builder = $row_builder;
+        $this->row_builder       = $row_builder;
     }
 
     /**
