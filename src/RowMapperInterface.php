@@ -107,15 +107,12 @@ interface RowMapperInterface
      * Returns an individual object from the mapped gateway for a given column
      * and value(s).
      *
-     * @param string $col The column to use for matching.
-     *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
+     * @param array $criteria key value set of conditions to use for where clause
      *
      * @return array
      *
      */
-    public function fetchObjectBy($col, $val);
+    public function fetchObjectBy(array $criteria);
 
     /**
      *
@@ -143,29 +140,25 @@ interface RowMapperInterface
      *
      * Returns a collection from the mapped table for a given column and value.
      *
-     * @param string $col The column to use for matching.
-     *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
+     * @param array $criteria array of key values where field => value to use for where clause
      *
      * @return array
      *
      */
-    public function fetchCollectionBy($col, $val);
+    public function fetchCollectionBy(array $criteria);
 
     /**
      *
      * Creates a Select query to match against a given column and value(s).
      *
-     * @param string $col The column to use for matching.
+     * @param array $criteria array of key values where field => value to use for where clause
      *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
+     * @param array|null $cols an array of the cols to select. Selects all by default
      *
      * @return Select
      *
      */
-    public function selectBy($col, $val);
+    public function selectBy(array $criteria, $cols = null);
 
     /**
      *

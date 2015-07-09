@@ -64,9 +64,8 @@ class SelectCallback implements SelectCallbackInterface
         foreach ($path as $node) {
             $relation_name = $node->relation_name;
             $mapper_name = $relation_to_mapper[$relation_name]['mapper'];
-            $primary_field = key($node->criteria);
-            $vals = $this->resolver->resolve(current($node->criteria), $results, $this->mapper);
-            $results[$relation_name] = $this->row_builder->fetchCollection($mapper_name, [$primary_field => $vals]);
+            $vals = $this->resolver->resolveCriteria($node->criteria, $results, $this->mapper);
+            $results[$relation_name] = $this->row_builder->fetchCollection($mapper_name, $vals);
         }
         return $results;
     }

@@ -90,7 +90,7 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
 
     public function testFetchObject()
     {
-        $actual = $this->mapper->fetchObjectBy('id', 1);
+        $actual = $this->mapper->fetchObjectBy(['id' => 1]);
         $expect = (object) [
             'id' => '1',
             'firstName' => 'Anna',
@@ -99,13 +99,13 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expect, $actual);
 
-        $actual = $this->mapper->fetchObjectBy('id', 0);
+        $actual = $this->mapper->fetchObjectBy(['id' => 0]);
         $this->assertFalse($actual);
     }
 
     public function testFetchObjects()
     {
-        $actual = $this->mapper->fetchObjectsBy('id', [1, 2, 3], 'id');
+        $actual = $this->mapper->fetchObjectsBy(['id' => [1, 2, 3]], 'id');
         $expect = [
             '1' => (object) [
                 'id' => '1',
@@ -128,13 +128,13 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expect, $actual);
 
-        $actual = $this->mapper->fetchObjectsBy('id', 0, 'id');
+        $actual = $this->mapper->fetchObjectsBy(['id' => 0], 'id');
         $this->assertSame(array(), $actual);
     }
 
     public function testFetchCollection()
     {
-        $actual = $this->mapper->fetchCollectionBy('id', [1, 2, 3]);
+        $actual = $this->mapper->fetchCollectionBy(['id' => [1, 2, 3]]);
         $expect = [
             (object) [
                 'id' => '1',
@@ -157,13 +157,13 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
         ];
         $this->assertEquals($expect, $actual);
 
-        $actual = $this->mapper->fetchCollectionBy('id', [0]);
+        $actual = $this->mapper->fetchCollectionBy(['id' => [0]]);
         $this->assertSame(array(), $actual);
     }
 
     public function testFetchCollections()
     {
-        $actual = $this->mapper->fetchCollectionsBy('buildingNumber', 1, 'floor');
+        $actual = $this->mapper->fetchCollectionsBy(['buildingNumber' => 1], 'floor');
         $expect = [
             '1' => [
                 (object) [
@@ -226,7 +226,7 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(13, $object->id);
 
         // did it insert?
-        $actual = $this->mapper->fetchObjectBy('id', 13);
+        $actual = $this->mapper->fetchObjectBy(['id' => 13]);
         $this->assertEquals('13', $actual->id);
         $this->assertEquals('Mona', $actual->firstName);
 
@@ -238,17 +238,17 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
     public function testUpdate()
     {
         // fetch an object, then modify and update it
-        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
+        $object = $this->mapper->fetchObjectBy(['firstName' => 'Anna']);
         $object->firstName = 'Annabelle';
         $affected = $this->mapper->update($object);
 
         // did it update?
         $this->assertTrue($affected == 1);
-        $actual = $this->mapper->fetchObjectBy('firstName', 'Annabelle');
+        $actual = $this->mapper->fetchObjectBy(['firstName' => 'Annabelle']);
         $this->assertEquals($actual, $object);
 
         // did anything else update?
-        $actual = $this->mapper->fetchObjectBy('id', 2);
+        $actual = $this->mapper->fetchObjectBy(['id' => 2]);
         $this->assertEquals('2', $actual->id);
         $this->assertEquals('Betty', $actual->firstName);
     }
@@ -256,7 +256,7 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
     public function testUpdateOnlyChanges()
     {
         // fetch an object, retain its original data, then change it
-        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
+        $object = $this->mapper->fetchObjectBy(['firstName' => 'Anna']);
         $object->firstName = 'Annabelle';
 
         // update with profiling turned on
@@ -279,11 +279,11 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
     public function testDelete()
     {
         // fetch an object, then delete it
-        $object = $this->mapper->fetchObjectBy('firstName', 'Anna');
+        $object = $this->mapper->fetchObjectBy(['firstName' => 'Anna']);
         $this->mapper->delete($object);
 
         // did it delete?
-        $actual = $this->mapper->fetchObjectBy('firstName', 'Anna');
+        $actual = $this->mapper->fetchObjectBy(['firstName' => 'Anna']);
         $this->assertFalse($actual);
 
         // do we still have everything else?
@@ -349,8 +349,8 @@ class CachingMapperTest extends \PHPUnit_Framework_TestCase
     }
 
     public function testVarDumpingQueryResults() {
-        $this->mapper->fetchObjectsBy('floor', 1, 'id');
-        $this->mapper->fetchObjectsBy('buildingNumber', 1, 'id');
+        $this->mapper->fetchObjectsBy(['floor' => 1], 'id');
+        $this->mapper->fetchObjectsBy(['buildingNumber' => 1], 'id');
     }
 
     protected function silenceErrors()

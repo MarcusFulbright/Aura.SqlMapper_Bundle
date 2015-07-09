@@ -89,7 +89,7 @@ class RowCache implements RowCacheInterface
      */
     public function get($id)
     {
-        $results = $this->queryCache($this->identity, $id)->results;
+        $results = $this->queryCache([$this->identity => $id])->results;
         return $results ? $results[0] : null;
     }
 
@@ -158,7 +158,7 @@ class RowCache implements RowCacheInterface
      */
     public function removeCachedVersion($row)
     {
-        if ($cached = $this->queryCacheInstances($this->identity, $row->{$this->identity}, false)->results) {
+        if ($cached = $this->queryCacheInstances([$this->identity => $row->{$this->identity}], false)->results) {
             $this->cache->detach($cached[0]);
         }
         return $cached;
@@ -205,9 +205,7 @@ class RowCache implements RowCacheInterface
      *
      * Query the cache for the provided field. Returns clones of the rows.
      *
-     * @param string $field The field to match on.
-     *
-     * @param mixed $value Either a value to match or an array of acceptable values.
+     * @param array $criteria set  of key values used for where clause
      *
      * @return \StdClass {
      *
@@ -218,9 +216,9 @@ class RowCache implements RowCacheInterface
      * }
      *
      */
-    public function queryCache($field, $value)
+    public function queryCache(array $criteria)
     {
-        return $this->queryCacheInstances($field, $value);
+        return $this->queryCacheInstances($criteria);
     }
 
     /**
@@ -229,9 +227,8 @@ class RowCache implements RowCacheInterface
      * rows. Note, this is protected so we can use this to pull back the instances of those
      * rows.
      *
-     * @param string $field The field to match on.
      *
-     * @param mixed $value Either a value to match or an array of acceptable values.
+     * @param array $criteria set of key values used for where clause
      *
      * @param bool $clone Whether or not to return a clone of cached rows or not.
      *
@@ -244,24 +241,22 @@ class RowCache implements RowCacheInterface
      * }
      *
      */
-    protected function queryCacheInstances($field, $value, $clone = true)
+    protected function queryCacheInstances(array $criteria, $clone = true)
     {
         $output = new \StdClass();
         $output->results = array();
         $output->ids = array();
-
         foreach ($this->cache as $row) {
-            if ($this->isAlive($row) === false) {
+            if (! $this->isAlive($row)) {
                 $this->cache->detach($row);
             } elseif (
-                $this->rowMatchesCriteria($row, $field, $value)
+                $this->rowMatchesCriteria($row, $criteria)
                 && !in_array($row->{$this->identity}, $output->ids)
             ) {
                 $output->results[] = $clone ? clone $row : $row;
                 $output->ids[] = $row->{$this->identity};
             }
         }
-
         return $output;
     }
 
@@ -271,21 +266,28 @@ class RowCache implements RowCacheInterface
      *
      * @param mixed $row The row to check.
      *
-     * @param string $field The field we want to match on.
+     * @param array $criteria set of key values to use for comparison
      *
-     * @param mixed $value Either a value to match or an array of acceptable values.
-     *
-     * @return bool Whethor or not it matches.
+     * @return bool Whether or not it matches.
      *
      */
-    protected function rowMatchesCriteria($row, $field, $value) {
-        $value = is_array($value) ? $value : array($value);
-        foreach ($value as $match) {
-            if (property_exists($row, $field) && $row->$field == $match) {
-                return true;
+    protected function rowMatchesCriteria($row, array $criteria)
+    {
+        $output = true;
+        array_walk(
+            $criteria,
+            function ($value, $field) use ($row, &$output) {
+                $value = is_array($value) ? $value : array($value);
+                foreach ($value as $match) {
+                    if (property_exists($row, $field) && $row->$field == $match) {
+                        continue;
+                    } else {
+                        $output = false;
+                        break;
+                    }
+                }
             }
-        }
-        return false;
+        );
+        return $output;
     }
-
 }

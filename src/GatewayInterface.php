@@ -76,15 +76,14 @@ interface GatewayInterface
      *
      * Creates a Select query to match against a given column and value(s).
      *
-     * @param string $col The column to use for matching.
+     * @param array $criteria key value pairs where column => value to use in where clause
      *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
+     * @param array $cols
      *
      * @return Select
      *
      */
-    public function selectBy($col, $val, array $cols = []);
+    public function selectBy(array $criteria, array $cols = []);
 
     /**
      *

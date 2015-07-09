@@ -68,7 +68,7 @@ class AggregateBuilder implements BuilderInterface
      * the AggregateMapper
      *
      */
-    public function fetchCollection($mapper_name, array $criteria = array())
+    public function fetchCollection($mapper_name, array $criteria = [])
     {
         $aggregate_mapper = $this->getMapper($mapper_name);
         return $aggregate_mapper->newCollection($this->select($mapper_name, $criteria));
@@ -108,7 +108,7 @@ class AggregateBuilder implements BuilderInterface
      * @return array An arranged array of arranged DB output.
      *
      */
-    public function select($mapper_name, array $criteria = array())
+    public function select($mapper_name, array $criteria = [])
     {
         $aggregate_mapper = $this->getMapper($mapper_name);
         return $this->row_data_arranger->arrangeRowData(

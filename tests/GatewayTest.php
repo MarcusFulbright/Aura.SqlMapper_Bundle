@@ -112,17 +112,17 @@ class GatewayTest extends \PHPUnit_Framework_TestCase
     public function testUpdate()
     {
         // fetch an object, then modify and update it
-        $row = $this->gateway->fetchRowBy('name', 'Anna');
+        $row = $this->gateway->fetchRowBy(['name' => 'Anna']);
         $row['name'] = 'Annabelle';
         $row = $this->gateway->update($row);
 
         // did it update?
         $this->assertTrue(is_array($row));
-        $actual = $this->gateway->fetchRowBy('name', 'Annabelle');
+        $actual = $this->gateway->fetchRowBy(['name' => 'Annabelle']);
         $this->assertEquals($actual, $row);
 
         // did anything else update?
-        $actual = $this->gateway->fetchRowBy('id', 2, ['id', 'name']);
+        $actual = $this->gateway->fetchRowBy(['id' => 2], ['id', 'name']);
         $expect = ['id' => '2', 'name' => 'Betty'];
         $this->assertEquals($actual, $expect);
 
@@ -135,11 +135,11 @@ class GatewayTest extends \PHPUnit_Framework_TestCase
     public function testDelete()
     {
         // fetch an object, then delete it
-        $row = $this->gateway->fetchRowBy('name', 'Anna');
+        $row = $this->gateway->fetchRowBy(['name' => 'Anna']);
         $this->gateway->delete($row);
 
         // did it delete?
-        $actual = $this->gateway->fetchRowsBy('name', 'Anna');
+        $actual = $this->gateway->fetchRowsBy(['name' => 'Anna']);
         $this->assertSame(array(), $actual);
 
         // do we still have everything else?

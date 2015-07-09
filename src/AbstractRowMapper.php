@@ -122,7 +122,7 @@ abstract class AbstractRowMapper implements RowMapperInterface
         if ($this->cache && $this->cache->isCached($row)) {
             return true;
         }
-        return (bool) $this->fetchObjectBy($this->getIdentityField(), $this->getIdentityValue($row));
+        return (bool) $this->fetchObjectBy([$this->getIdentityField() => $this->getIdentityValue($row)]);
     }
 
     /**
@@ -276,18 +276,16 @@ abstract class AbstractRowMapper implements RowMapperInterface
      *
      * Performs a cache query if we are caching and returns the results object. Otherwise returns null.
      *
-     * @param string $field The field to look up.
-     *
-     * @param mixed $val The value to compare it to.
+     * @param array $criteria key values used for the where clause
      *
      * @return null|object
      *
      */
-    protected function getFromCache($field, $val) {
+    protected function getFromCache(array $criteria) {
         if ($this->cache === null) {
             return null;
         } else {
-            return $this->cache->queryCache($field, $val);
+            return $this->cache->queryCache($criteria);
         }
     }
 
@@ -323,21 +321,18 @@ abstract class AbstractRowMapper implements RowMapperInterface
      * Returns an individual object from the gateway, for a given column and
      * value.
      *
-     * @param string $field The field to use for matching.
-     *
-     * @param mixed $val The value to match against; this can be an array
-     * of values.
+     * @param array $criteria a set of key values where field => value to use in where clause
      *
      * @return object|false
      *
      */
-    public function fetchObjectBy($field, $val)
+    public function fetchObjectBy(array $criteria)
     {
-        $results = $this->getFromCache($field, $val);
+        $results = $this->getFromCache($criteria);
         if ($results && $results->results) {
             return $results->results[0];
         }
-        $select = $this->selectBy($field, $val);
+        $select = $this->selectBy($criteria);
         return $this->fetchObject($select);
     }
 
@@ -378,24 +373,21 @@ abstract class AbstractRowMapper implements RowMapperInterface
      * column and value(s); the array is keyed on the values of a specified
      * object field.
      *
-     * @param string $field The field to use for matching.
-     *
-     * @param mixed $val The value to match against; this can be an array
-     * of values.
+     * @param array $criteria a set of key value pairs used in the where clause
      *
      * @param mixed $key_field Key the array on the values of this object field.
      *
      * @return object|false
      *
      */
-    public function fetchObjectsBy($field, $val, $key_field)
+    public function fetchObjectsBy(array $criteria, $key_field)
     {
-        $cached  = $this->getFromCache($field, $val);
-        $select  = $this->selectBy($field, $val);
+        $cached  = $this->getFromCache($criteria);
+        $select  = $this->selectBy($criteria);
         $results = $this->fetchObjects($select, $key_field, $cached?$cached->ids:null);
         if ($cached) {
             foreach ($cached->results as $row) {
-                $results[$row->$field] = $row;
+                $results[$row->$key_field] = $row;
             }
         }
         return $results;
@@ -443,19 +435,16 @@ abstract class AbstractRowMapper implements RowMapperInterface
      *
      * Returns a collection from the gateway, for a given column and value(s).
      *
-     * @param string $field The field to use for matching.
-     *
-     * @param mixed $val The value to match against; this can be an array
-     * of values.
+     * @param array $criteria A key value set used for the where clause
      *
      * @return object|array
      *
      */
-    public function fetchCollectionBy($field, $val)
+    public function fetchCollectionBy(array $criteria)
     {
-        $cached  = $this->getFromCache($field, $val);
-        $select  = $this->selectBy($field, $val);
-        $results = $this->fetchCollection($select, $cached?$cached->ids:null);
+        $cached  = $this->getFromCache($criteria);
+        $select  = $this->selectBy($criteria);
+        $results = $this->fetchCollection($select, $cached ? $cached->ids : null);
         if ($cached) {
             foreach ($cached->results as $row) {
                 $results[] = $row;
@@ -510,20 +499,17 @@ abstract class AbstractRowMapper implements RowMapperInterface
      * Returns an array of collections from the gateway, for a given column and
      * value(s); the array is keyed on the values of a specified object field.
      *
-     * @param string $field The field to use for matching.
-     *
-     * @param mixed $val The value to match against; this can be an array
-     * of values.
+     * @param array $criteria key value pairs used for where clause
      *
      * @param mixed $key_field Key the array on the values of this object field.
      *
      * @return object|false
      *
      */
-    public function fetchCollectionsBy($field, $val, $key_field = null)
+    public function fetchCollectionsBy(array $criteria, $key_field = null)
     {
-        $cached = $this->getFromCache($field, $val);
-        $select = $this->selectBy($field, $val);
+        $cached = $this->getFromCache($criteria);
+        $select = $this->selectBy($criteria);
         $fromDB = $this->fetchCollections($select, $key_field, $cached?$cached->ids:null);
 
         if ($cached) {
@@ -570,23 +556,23 @@ abstract class AbstractRowMapper implements RowMapperInterface
      * as aliases on the underlying column names, for a given column and
      * value(s).
      *
+     * @param array $criteria array of key values where field => value to use for where clause
+     *
      * @param array|null $cols an array of the cols to select. Selects all by default
-     *
-     * @param string $field The field to use for matching.
-     *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
      *
      * @return Select
      *
      */
-    public function selectBy($field, $val, $cols = null)
+    public function selectBy(array $criteria, $cols = null)
     {
-        $col = $this->getColFromField($field);
+        $translated = [];
+        foreach ($criteria as $field => $value) {
+            $translated[$this->getColFromField($field)] = $value;
+        }
         if ($cols === null) {
             $cols = $this->getColsAsFields();
         }
-        return $this->gateway->selectBy($col, $val, $cols);
+        return $this->gateway->selectBy($translated, $cols);
     }
 
     /**

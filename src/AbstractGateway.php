@@ -158,9 +158,9 @@ abstract class AbstractGateway implements GatewayInterface
         return $select->fetchOne();
     }
 
-    public function fetchRowBy($col, $val, array $cols = [])
+    public function fetchRowBy(array $criteria, array $cols = [])
     {
-        return $this->selectBy($col, $val, $cols)->fetchOne();
+        return $this->selectBy($criteria, $cols)->fetchOne();
     }
 
     public function fetchRows(Select $select)
@@ -168,9 +168,9 @@ abstract class AbstractGateway implements GatewayInterface
         return $select->fetchAll();
     }
 
-    public function fetchRowsBy($col, $val, array $cols = [])
+    public function fetchRowsBy(array $criteria, array $cols = [])
     {
-        return $this->selectBy($col, $val, $cols)->fetchAll();
+        return $this->selectBy($criteria, $cols)->fetchAll();
     }
 
     /**
@@ -203,10 +203,7 @@ abstract class AbstractGateway implements GatewayInterface
      *
      * Creates a Select query to match against a given column and value(s).
      *
-     * @param string $col The column to use for matching.
-     *
-     * @param mixed $val The value(s) to match against; this can be an array
-     * of values.
+     * @param array $criteria key value pairs where column => value to use in where clause
      *
      * @param array $cols Select these columns from the table; when empty,
      * selects all gateway columns.
@@ -214,17 +211,19 @@ abstract class AbstractGateway implements GatewayInterface
      * @return Select
      *
      */
-    public function selectBy($col, $val, array $cols = [])
+    public function selectBy(array $criteria, array $cols = [])
     {
         $select = $this->select($cols);
-        $where = $this->getTableCol($col);
-        if (is_array($val)) {
-            $where .= " IN (:{$col})";
-        } else {
-            $where .= " = :{$col}";
+        foreach ($criteria as $col => $val) {
+            $where = $this->getTableCol($col);
+            if (is_array($val)) {
+                $where .= " IN (:{$col})";
+            } else {
+                $where .= " = :{$col}";
+            }
+            $select->where($where);
+            $select->bindValue($col, $val);
         }
-        $select->where($where);
-        $select->bindValue($col, $val);
         return $select;
     }
 

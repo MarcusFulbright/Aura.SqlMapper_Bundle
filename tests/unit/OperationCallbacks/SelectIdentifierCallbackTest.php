@@ -113,27 +113,27 @@ class SelectIdentifierCallbackTest extends \PHPUnit_Framework_TestCase
         ];
         $this
             ->resolver
-            ->shouldReceive('resolve')
+            ->shouldReceive('resolveCriteria')
             ->once()
-            ->with('NP', [], $this->aggregate_mapper)
-            ->andReturn('NP');
+            ->with(['type' => 'NP'], [], $this->aggregate_mapper)
+            ->andReturn(['type' => 'NP']);
         $this
             ->resolver
-            ->shouldReceive('resolve')
+            ->shouldReceive('resolveCriteria')
             ->once()
-            ->with(':building.id', ['building' => $building_results], $this->aggregate_mapper)
-            ->andReturn(1);
+            ->with(['building' => ':building.id'], ['building' => $building_results], $this->aggregate_mapper)
+            ->andReturn(['building' => 1]);
         $this
             ->row_mapper
             ->shouldReceive('selectBy')
             ->once()
-            ->with('type', 'NP', ['type', 'id'])
+            ->with(['type' => 'NP'], ['type', 'id'])
             ->andReturn($this->query);
         $this
             ->row_mapper
             ->shouldReceive('selectBy')
             ->once()
-            ->with('building', 1, ['building', 'id'])
+            ->with(['building' => 1], ['building', 'id'])
             ->andReturn($this->query);
         $this
             ->query

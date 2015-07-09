@@ -18,7 +18,7 @@ class PlaceHolderResolverTest extends \PHPUnit_Framework_TestCase
 
     public function testResolveArray()
     {
-        $value = ':task.type.code';
+        $criteria = ['code' => ':task.type.code'];
         $data = array(
             'task.type' => array(
                 array(
@@ -27,20 +27,20 @@ class PlaceHolderResolverTest extends \PHPUnit_Framework_TestCase
                 )
             )
         );
-        $expected = array('F');
-        $this->assertEquals($expected, $this->resolver->resolve($value, $data, $this->mapper));
+        $expected = array('code' => ['F']);
+        $this->assertEquals($expected, $this->resolver->resolveCriteria($criteria, $data, $this->mapper));
     }
 
     public function testResolveStdClass()
     {
-        $value = ':task.type.code';
+        $criteria = ['code' => ':task.type.code'];
         $obj = new \stdClass();
         $obj->code = 'F';
         $obj->id = '3';
         $data = array(
             'task.type' => array($obj)
         );
-        $expected = array('F');
-        $this->assertEquals($expected, $this->resolver->resolve($value, $data, $this->mapper));
+        $expected = array('code' => ['F']);
+        $this->assertEquals($expected, $this->resolver->resolveCriteria($criteria, $data, $this->mapper));
     }
 }

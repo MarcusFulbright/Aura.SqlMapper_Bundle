@@ -42,7 +42,7 @@ class RowObjectBuilder implements BuilderInterface
     public function fetchCollection($mapper_name, array $criteria = [])
     {
         $row_mapper = $this->getMapper($mapper_name);
-        return $row_mapper->fetchCollection($row_mapper->selectBy(key($criteria), current($criteria)));
+        return $row_mapper->fetchCollection($row_mapper->selectBy($criteria));
     }
 
     /**
@@ -62,7 +62,7 @@ class RowObjectBuilder implements BuilderInterface
     public function fetchObject($mapper_name, array $criteria = array())
     {
         $row_mapper = $this->getMapper($mapper_name);
-        return $row_mapper->fetchObject($row_mapper->selectBy(key($criteria), current($criteria)));
+        return $row_mapper->fetchObject($row_mapper->selectBy($criteria));
     }
 
     /**
@@ -84,7 +84,7 @@ class RowObjectBuilder implements BuilderInterface
         if (empty($criteria)) {
             $query = $row_mapper->select();
         } else {
-            $query = $row_mapper->selectBy(key($criteria), current($criteria));
+            $query = $row_mapper->selectBy($criteria);
         }
         return $row_mapper->getWriteConnection()->fetchAll($query->__toString(), $query->getBindValues());
     }

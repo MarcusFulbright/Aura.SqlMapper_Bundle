@@ -72,13 +72,11 @@ interface RowCacheInterface {
      *
      * Get rows from the cache that match the provided criteria.
      *
-     * @param string $field The field to compare on each row.
-     *
-     * @param mixed|array $val The value, or an array of values, to compare it to.
+     * @param array $criteria set of key values to use for comparison
      *
      * @return \StdClass An object with a results property that is an array of rows, and an ids property which
      * is an array of ids.
      *
      */
-    public function queryCache($field, $val);
+    public function queryCache(array $criteria);
 }

@@ -82,16 +82,16 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
 
         $this
             ->resolver
-            ->shouldReceive('resolve')
+            ->shouldReceive('resolveCriteria')
             ->once()
-            ->with(1, [], $this->aggregate_mapper)
-            ->andReturn(1);
+            ->with(['id' => 1], [], $this->aggregate_mapper)
+            ->andReturn(['id' => 1]);
         $this
             ->resolver
-            ->shouldReceive('resolve')
+            ->shouldReceive('resolveCriteria')
             ->once()
-            ->with(':__root.building', ['__root' => $root_results], $this->aggregate_mapper)
-            ->andReturn(2);
+            ->with(['id' => ':__root.building'], ['__root' => $root_results], $this->aggregate_mapper)
+            ->andReturn(['building' => 2]);
         $this
             ->row_builder
             ->shouldReceive('fetchCollection')
@@ -101,7 +101,7 @@ class SelectCallbackTest extends \PHPUnit_Framework_TestCase
         $this->row_builder
             ->shouldReceive('fetchCollection')
             ->once()
-            ->with('fakeBuildingMapper',['id' => 2])
+            ->with('fakeBuildingMapper',['building' => 2])
             ->andReturn($building_results);
 
         $this->assertEquals($expected, $this->callback->__invoke($this->path_from_root));

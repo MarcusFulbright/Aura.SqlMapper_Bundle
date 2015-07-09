@@ -63,8 +63,7 @@ class SelectIdentifierCallback implements SelectCallbackInterface
                 $ids['__root'] = $this->runQuery($query, $row_mapper);
             } else {
                 $query = $row_mapper->selectBy(
-                    key($criteria),
-                    $this->resolver->resolve(current($criteria), $ids, $this->mapper),
+                    $this->resolver->resolveCriteria($criteria, $ids, $this->mapper),
                     array_merge(
                         $node->fields,
                         [$row_mapper->getIdentityField()]
