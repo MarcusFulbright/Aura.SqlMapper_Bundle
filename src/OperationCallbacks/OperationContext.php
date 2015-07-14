@@ -1,15 +1,14 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
-
-use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\RowCacheInterface;
+use Aura\SqlMapper_Bundle\Entity\EntityRepository;
+use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
 
 /**
  * Value store object that describes a data base action, Select, Insert, Update, or Delete
  */
 class OperationContext
 {
-    /** @var RowMapperInterface  */
+    /** @var EntityMapperInterface  */
     public $mapper;
 
     /** @var \stdClass */
@@ -23,18 +22,16 @@ class OperationContext
 
     /**
      *
-     * @param RowMapperInterface $mapper The appropriate row data mapper
+     * @param EntityMapperInterface $mapper The appropriate row data mapper
      *
      * @param \stdClass $row Object that represents the appropriate row data, can be obtained form Row Data Extractor
-     *
-     * @param string $mapper_name name of the row data mapper
      *
      * @param string $relation_name name of the relation that this row data belongs to according to aggregate map
      *
      * @return OperationContext
      *
      */
-    public function __construct(\stdClass $row, $relation_name, RowMapperInterface $mapper)
+    public function __construct(\stdClass $row, $relation_name, EntityMapperInterface $mapper)
     {
         $this->mapper = $mapper;
         $this->row = $row;

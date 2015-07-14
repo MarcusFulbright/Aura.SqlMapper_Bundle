@@ -1,5 +1,5 @@
 <?php
-namespace Aura\SqlMapper_Bundle;
+namespace Aura\SqlMapper_Bundle\Tests\Unit;
 
 class PlaceHolderResolverTest extends \PHPUnit_Framework_TestCase
 {

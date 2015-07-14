@@ -1,5 +1,5 @@
 <?php
-namespace Aura\SqlMapper_Bundle;
+namespace Aura\SqlMapper_Bundle\Tests\Unit;
 
 /**
  * Test QueryResolverTest

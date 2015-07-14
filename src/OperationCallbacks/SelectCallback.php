@@ -1,11 +1,10 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\OperationArranger;
-use Aura\SqlMapper_Bundle\PlaceholderResolver;
-use Aura\SqlMapper_Bundle\RowObjectBuilder;
-
+use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\Entity\EntityRepository;
+use Aura\SqlMapper_Bundle\EntityMediation\OperationArranger;
+use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 
 /**
  *
@@ -14,8 +13,8 @@ use Aura\SqlMapper_Bundle\RowObjectBuilder;
  */
 class SelectCallback implements SelectCallbackInterface
 {
-    /** @var RowObjectBuilder */
-    protected $row_builder;
+    /** @var EntityRepository */
+    protected $entity_repository;
 
     /** @var AggregateMapperInterface */
     protected $mapper;
@@ -29,7 +28,7 @@ class SelectCallback implements SelectCallbackInterface
     /**
      * @param AggregateMapperInterface $mapper
      *
-     * @param RowObjectBuilder $row_builder
+     * @param EntityRepository $entity_repository
      *
      * @param OperationArranger $arranger
      *
@@ -38,12 +37,12 @@ class SelectCallback implements SelectCallbackInterface
      */
     public function __construct(
         AggregateMapperInterface $mapper,
-        RowObjectBuilder $row_builder,
+        EntityRepository $entity_repository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        $this->row_builder  = $row_builder;
-        $this->mapper   = $mapper;
+        $this->entity_repository = $entity_repository;
+        $this->mapper = $mapper;
         $this->arranger = $arranger;
         $this->resolver = $resolver;
     }
@@ -65,7 +64,7 @@ class SelectCallback implements SelectCallbackInterface
             $relation_name = $node->relation_name;
             $mapper_name = $relation_to_mapper[$relation_name]['mapper'];
             $vals = $this->resolver->resolveCriteria($node->criteria, $results, $this->mapper);
-            $results[$relation_name] = $this->row_builder->fetchCollection($mapper_name, $vals);
+            $results[$relation_name] = $this->entity_repository->fetchCollection($mapper_name, $vals);
         }
         return $results;
     }

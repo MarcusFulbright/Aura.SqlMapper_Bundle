@@ -1,12 +1,12 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\OperationArranger;
-use Aura\SqlMapper_Bundle\PlaceholderResolver;
-use Aura\SqlMapper_Bundle\RowObjectBuilder;
-use Aura\SqlMapper_Bundle\Transaction;
+use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\EntityMediation\Transaction;
+use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
+use Aura\SqlMapper_Bundle\Entity\EntityRepository;
+use Aura\SqlMapper_Bundle\EntityMediation\OperationArranger;
+use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 
 class OperationCallbackFactory implements CallbackFactoryInterface
 {
@@ -22,7 +22,6 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     public function getCommitCallback(
         array $operation_list,
         PlaceholderResolver $resolver,
-        RowObjectBuilder $row_builder,
         array $extracted
     ) {
         return new CommitCallback($operation_list, $resolver, $extracted);
@@ -33,11 +32,11 @@ class OperationCallbackFactory implements CallbackFactoryInterface
      */
     public function getIdentifierCallback(
         AggregateMapperInterface $mapper,
-        RowObjectBuilder $row_builder,
+        EntityRepository $entity_repository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        return new SelectIdentifierCallback($mapper, $row_builder, $arranger, $resolver);
+        return new SelectIdentifierCallback($mapper, $entity_repository, $arranger, $resolver);
     }
 
     /**
@@ -45,11 +44,11 @@ class OperationCallbackFactory implements CallbackFactoryInterface
      */
     public function getSelectCallback(
         AggregateMapperInterface $mapper,
-        RowObjectBuilder $row_builder,
+        EntityRepository $entityRepository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        return new SelectCallback($mapper, $row_builder, $arranger, $resolver);
+        return new SelectCallback($mapper, $entityRepository, $arranger, $resolver);
     }
 
     /** {@inheritdoc} */
@@ -73,7 +72,7 @@ class OperationCallbackFactory implements CallbackFactoryInterface
     /**
      * {@inheritdoc}
      */
-    public function newContext(\stdClass $row, $relation_name, RowMapperInterface $mapper)
+    public function newContext(\stdClass $row, $relation_name, EntityMapperInterface $mapper)
     {
         return new OperationContext($row, $relation_name, $mapper);
     }

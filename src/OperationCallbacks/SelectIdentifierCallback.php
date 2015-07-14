@@ -1,13 +1,13 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\AggregateMapperInterface;
-use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\RowMapperLocator;
-use Aura\SqlMapper_Bundle\OperationArranger;
-use Aura\SqlMapper_Bundle\PlaceholderResolver;
+
+use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
+use Aura\SqlMapper_Bundle\Entity\EntityRepository;
+use Aura\SqlMapper_Bundle\EntityMediation\OperationArranger;
+use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\Query\AbstractConnectedQuery;
-use Aura\SqlMapper_Bundle\RowObjectBuilder;
 
 /**
  *
@@ -16,8 +16,8 @@ use Aura\SqlMapper_Bundle\RowObjectBuilder;
  */
 class SelectIdentifierCallback implements SelectCallbackInterface
 {
-    /** @var RowObjectBuilder */
-    protected $row_builder;
+    /** @var EntityRepository */
+    protected $entity_repository;
 
     /** @var OperationArranger */
     protected $arranger;
@@ -33,14 +33,14 @@ class SelectIdentifierCallback implements SelectCallbackInterface
      */
     public function __construct(
         AggregateMapperInterface $mapper,
-        RowObjectBuilder $row_builder,
+        EntityRepository $entity_repository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
-        $this->row_builder = $row_builder;
-        $this->arranger    = $arranger;
-        $this->mapper      = $mapper;
-        $this->resolver    = $resolver;
+        $this->entity_repository = $entity_repository;
+        $this->arranger = $arranger;
+        $this->mapper = $mapper;
+        $this->resolver = $resolver;
     }
 
     /**
@@ -52,30 +52,30 @@ class SelectIdentifierCallback implements SelectCallbackInterface
     public function __invoke(array $path)
     {
         $relation_to_mapper = $this->mapper->getRelationToMapper();
-        $root_mapper = $this->row_builder->getMapper($relation_to_mapper['__root']['mapper']);
+        $root_mapper = $this->entity_repository->getMapper($relation_to_mapper['__root']['mapper']);
         $root_primary = $root_mapper->getIdentityField();
         $ids = [];
         foreach ($path as $node) {
-            $row_mapper = $this->row_builder->getMapper($relation_to_mapper[$node->relation_name]['mapper']);
+            $entity_mapper = $this->entity_repository->getMapper($relation_to_mapper[$node->relation_name]['mapper']);
             $criteria = $node->criteria;
             if ($criteria === null) {
-                $query = $row_mapper->select([$root_primary]);
-                $ids['__root'] = $this->runQuery($query, $row_mapper);
+                $query = $entity_mapper->select([$root_primary]);
+                $ids['__root'] = $this->runQuery($query, $entity_mapper);
             } else {
-                $query = $row_mapper->selectBy(
+                $query = $entity_mapper->selectBy(
                     $this->resolver->resolveCriteria($criteria, $ids, $this->mapper),
                     array_merge(
                         $node->fields,
-                        [$row_mapper->getIdentityField()]
+                        [$entity_mapper->getIdentityField()]
                     )
                 );
-                $ids[$node->relation_name] = $this->runQuery($query, $row_mapper);
+                $ids[$node->relation_name] = $this->runQuery($query, $entity_mapper);
             }
         }
         return $ids;
     }
 
-    protected function runQuery(AbstractConnectedQuery $query, RowMapperInterface $mapper)
+    protected function runQuery(AbstractConnectedQuery $query, EntityMapperInterface $mapper)
     {
         return $mapper->getWriteConnection()->fetchAll($query->__toString(), $query->getBindValues());
     }

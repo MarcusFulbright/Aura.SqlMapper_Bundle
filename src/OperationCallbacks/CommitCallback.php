@@ -1,8 +1,8 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
+use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 use Aura\SqlMapper_Bundle\Exception\DbOperationException;
-use Aura\SqlMapper_Bundle\PlaceholderResolver;
 
 /**
  *

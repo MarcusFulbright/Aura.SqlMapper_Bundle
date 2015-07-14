@@ -1,5 +1,5 @@
 <?php
-namespace Aura\SqlMapper_Bundle\unit;
+namespace Aura\SqlMapper_Bundle\Tests\Unit;
 
 use Aura\SqlMapper_Bundle\DomainObjectBuilder;
 use Mockery\MockInterface;

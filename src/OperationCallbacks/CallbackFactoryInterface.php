@@ -1,10 +1,9 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\RowMapperInterface;
-use Aura\SqlMapper_Bundle\PlaceholderResolver;
-use Aura\SqlMapper_Bundle\RowObjectBuilder;
-use Aura\SqlMapper_Bundle\Transaction;
+use Aura\SqlMapper_Bundle\DbMediation\Transaction;
+use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
+use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 
 /**
  * Defines all the methods used to create Operation Callback methods.
@@ -17,8 +16,6 @@ interface CallbackFactoryInterface
      *
      * @param PlaceholderResolver $resolver
      *
-     * @param RowObjectBuilder $row_builder
-     *
      * @param array $extracted Row Data extracted from the aggregate object using the RowDataExtractor
      *
      * @return CommitCallback
@@ -27,7 +24,6 @@ interface CallbackFactoryInterface
     public function getCommitCallback(
         array $operation_list,
         PlaceholderResolver $resolver,
-        RowObjectBuilder $row_builder,
         array $extracted
     );
 
@@ -45,7 +41,7 @@ interface CallbackFactoryInterface
 
     /**
      *
-     * @param RowMapperInterface $mapper The appropriate row data mapper
+     * @param EntityMapperInterface $mapper The appropriate row data mapper
      *
      * @param \stdClass $row Object that represents the appropriate row data, can be obtained form Row Data Extractor
      *
@@ -54,5 +50,5 @@ interface CallbackFactoryInterface
      * @return OperationContext
      *
      */
-    public function newContext(\stdClass $row, $relation_name, RowMapperInterface $mapper);
+    public function newContext(\stdClass $row, $relation_name, EntityMapperInterface $mapper);
 }
