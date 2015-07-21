@@ -10,6 +10,7 @@
  */
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
+use Aura\SqlMapper_Bundle\Entity\EntityLocator;
 use Aura\SqlMapper_Bundle\Entity\EntityMapperLocator;
 use Exception;
 use SplObjectStorage;
@@ -37,12 +38,12 @@ class Transaction
      * The RowMapperLocator for this Transaction is passed to the callable as a
      * function parameter.
      *
-     * @param EntityMapperLocator $mapper_locator A mapper locator for the queries.
+     * @param EntityLocator $mapper_locator A mapper locator for the queries.
      *
      * @return bool True if the transaction was committed, false if rolled back.
      *
      */
-    public function __invoke(callable $func, EntityMapperLocator $mapper_locator)
+    public function __invoke(callable $func, EntityLocator $mapper_locator)
     {
         // retain arguments for the $queries call later, minus $queries itself
         $args = func_get_args();
@@ -67,7 +68,7 @@ class Transaction
      * @return null
      *
      */
-    protected function getWriteConnections(EntityMapperLocator $mapper_locator)
+    protected function getWriteConnections(EntityLocator $mapper_locator)
     {
         $write_connections = new SplObjectStorage;
         foreach ($mapper_locator as $mapper) {

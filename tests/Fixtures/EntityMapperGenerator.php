@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Fixtures;
 
-use Aura\SqlMapper_Bundle\Entity\EntityMapperLocator;
+use Aura\SqlMapper_Bundle\Entity\EntityLocator;
 use Aura\SqlMapper_Bundle\Filter;
 use Aura\SqlMapper_Bundle\Row\GatewayLocator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingFactory;
@@ -55,7 +55,7 @@ class EntityMapperGenerator
                 return $this->$method($locator);
             };
         }
-        return new EntityMapperLocator($mappers);
+        return new EntityLocator($mappers);
     }
 
     public function getUser(GatewayLocator $locator, $cache = null)

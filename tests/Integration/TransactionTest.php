@@ -3,7 +3,7 @@ namespace Aura\SqlMapper_Bundle;
 
 use Aura\Sql\ConnectionLocator;
 use Aura\Sql\ExtendedPdo;
-use Aura\SqlMapper_Bundle\Entity\EntityMapperLocator;
+use Aura\SqlMapper_Bundle\Entity\EntityLocator;
 use Aura\SqlMapper_Bundle\EntityMediation\Transaction;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeEntityFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeEntityMapper;
@@ -36,7 +36,7 @@ class TransactionTest extends \PHPUnit_Framework_TestCase
             new Filter()
         );
 
-        $this->mapper_locator = new EntityMapperLocator([
+        $this->mapper_locator = new EntityLocator([
             'fake' => function () use ($mapper) { return $mapper; },
         ]);
 
@@ -58,12 +58,12 @@ class TransactionTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function success(EntityMapperLocator $entity_mapper_locator)
+    public function success(EntityLocator $locator)
     {
         return 'success';
     }
 
-    public function failure(EntityMapperLocator $entity_mapper_locator)
+    public function failure(EntityLocator $locator)
     {
         throw new Exception('failure');
     }

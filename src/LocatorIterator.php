@@ -1,34 +1,16 @@
 <?php
-/**
- *
- * This file is part of the Aura project for PHP.
- *
- * @package Aura.SqlMapper_Bundle
- *
- * @license http://opensource.org/licenses/bsd-license.php BSD
- *
- */
-namespace Aura\SqlMapper_Bundle\Entity;
+namespace Aura\SqlMapper_Bundle;
 
-use Iterator;
-
-/**
- *
- * An object to allow iteration over the instances in a RowMapperLocator.
- *
- * @package Aura.SqlMapper_Bundle
- *
- */
-class EntityMapperIterator implements Iterator
+class LocatorIterator implements LocatorIteratorInterface, \Iterator
 {
     /**
      *
      * The mappers over which we are iterating.
      *
-     * @var EntityMapperLocator
+     * @var LocatorInterface
      *
      */
-    protected $mapper_locator;
+    protected $locator;
 
     /**
      *
@@ -52,14 +34,14 @@ class EntityMapperIterator implements Iterator
      *
      * Constructor.
      *
-     * @param EntityMapperLocator $mapper_locator The RowMapperLocator object over which to iterate.
+     * @param LocatorInterface $locator.
      *
      * @param array $keys The keys in the RowMapperLocator object.
      *
      */
-    public function __construct(EntityMapperLocator $mapper_locator, array $keys = [])
+    public function __construct(LocatorInterface $locator, array $keys = [])
     {
-        $this->mapper_locator = $mapper_locator;
+        $this->locator = $locator;
         $this->keys = $keys;
     }
 
@@ -67,12 +49,12 @@ class EntityMapperIterator implements Iterator
      *
      * Returns the value at the current iterator position.
      *
-     * @return EntityMapperInterface
+     * @return mixed
      *
      */
     public function current()
     {
-        return $this->mapper_locator->__get($this->key());
+        return $this->locator->__get($this->key());
     }
 
     /**
@@ -91,7 +73,7 @@ class EntityMapperIterator implements Iterator
      *
      * Moves the iterator to the next position.
      *
-     * @return null
+     * @return void
      *
      */
     public function next()
@@ -103,7 +85,7 @@ class EntityMapperIterator implements Iterator
      *
      * Moves the iterator to the first position.
      *
-     * @return null
+     * @return void
      *
      */
     public function rewind()
@@ -115,7 +97,7 @@ class EntityMapperIterator implements Iterator
      *
      * Is the current iterator position valid?
      *
-     * @return null
+     * @return bool
      *
      */
     public function valid()
