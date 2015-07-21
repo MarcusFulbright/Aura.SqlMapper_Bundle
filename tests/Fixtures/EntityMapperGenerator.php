@@ -51,7 +51,9 @@ class EntityMapperGenerator
         {
             $method = 'get'.ucfirst($entity);
             $name = strtolower($entity).'_mapper';
-            $mappers[$name] = $this->$method($locator);
+            $mappers[$name] = function () use ($method, $locator) {
+                return $this->$method($locator);
+            };
         }
         return new EntityMapperLocator($mappers);
     }

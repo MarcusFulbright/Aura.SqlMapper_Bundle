@@ -3,8 +3,8 @@ namespace Aura\SqlMapper_Bundle;
 
 use Aura\Sql\ExtendedPdo;
 use Aura\SqlMapper_Bundle\Query\ConnectedQueryFactory;
-use Aura\SqlMapper_Bundle\Tests\Fixtures\Assertions;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\Assertions;
 use Aura\SqlQuery\QueryFactory as QueryFactory;
 
 class QueryTest extends \PHPUnit_Framework_TestCase

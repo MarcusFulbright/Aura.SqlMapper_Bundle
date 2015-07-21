@@ -1,66 +1,72 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-use Aura\SqlMapper_Bundle\Tests\Fixtures\AbstractIntegrationTestCase;
+use Aura\SqlMapper_Bundle\Entity\EntityRepository;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\EntityMapperGenerator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\UserEntityUtil;
 
-class EntityRepositoryTest extends AbstractIntegrationTestCase
+class EntityRepositoryTest extends \PHPUnit_Framework_TestCase
 {
+    use UserEntityUtil;
+
+    /** @var  EntityRepository */
+    protected $repository;
+
     public function setUp()
     {
-        $this->setUpEntities();
-        $this->loadFixtures();
+        $gateway_gen = new GatewayGenerator();
+        $gateway_locator = $gateway_gen->setUpGatewayLocator(['user']);
+        $mapper_gen = new EntityMapperGenerator();
+        $mapper_locator = $mapper_gen->getMapperLocator(['user' => null], $gateway_locator);
+        $fixtures = new SqliteFixture($gateway_gen->getConnection()->getWrite());
+        $fixtures->exec();
+                $this->repository = new EntityRepository($mapper_locator);
     }
 
     public function testFetchCollection()
     {
         $this->assertEquals(
-            [$this->formatRecordToobject($this->getBetty(), true)],
-            $this->entity_repository->fetchCollection('aura_test_table', ['id' => '2'])
+            [$this->getBetty()],
+            $this->repository->fetchCollection('user_mapper', ['id' => '2'])
         );
     }
 
     public function testFetchObject()
     {
         $this->assertEquals(
-            $this->formatRecordToobject($this->getBetty(), true),
-            $this->entity_repository->fetchObject('aura_test_table', ['id' => '2'])
+            $this->getBetty(),
+            $this->repository->fetchObject('user_mapper', ['id' => '2'])
         );
     }
 
     public function testSelect()
     {
         $this->assertEquals(
-            [(array)$this->formatRecordToobject($this->getBetty(), true)],
-            $this->entity_repository->select('aura_test_table', ['id' => '2'])
+            [$this->getBetty()->toDbData()],
+            $this->repository->select('user_mapper', ['id' => '2'])
         );
     }
 
     public function testUpdate()
     {
-        $betty = $this->formatRecordToobject($this->getBetty());
-        $betty->building = $betty->building->id;
-        $betty->floor = $betty->floor->id;
-        unset($betty->tasks);
-        $betty->name = 'new name';
-        $this->assertTrue($this->entity_repository->update('aura_test_table', $betty));
+        $betty = $this->getBetty();
+        $betty->setName('new name');
+        $this->assertTrue($this->repository->update('user_mapper', $betty));
     }
 
     public function testCreate()
     {
-        $new_entry = (object) [
-            'id' => null,
-            'name' => 'new_entry',
-            'building' => '1',
-            'floor' => '2'
-        ];
-        $this->assertTrue($this->entity_repository->create('aura_test_table', $new_entry));
+        $new_entry = $this->newUser(null, 'new_entry', '1', '2');
+        $this->assertTrue($this->repository->create('user_mapper', $new_entry));
     }
 
     public function testDelete()
     {
         $this->assertTrue(
-            $this->entity_repository->delete('aura_test_table',
-                $this->formatRecordToobject($this->getBetty())
+            $this->repository->delete('user_mapper',
+                $this->getBetty()
             )
         );
     }

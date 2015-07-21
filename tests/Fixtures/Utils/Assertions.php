@@ -1,5 +1,5 @@
 <?php
-namespace Aura\SqlMapper_Bundle\Tests\Fixtures;
+namespace Aura\SqlMapper_Bundle\Tests\Fixtures\Utils;
 
 trait Assertions
 {

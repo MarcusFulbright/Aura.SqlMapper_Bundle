@@ -10,7 +10,7 @@
  */
 namespace Aura\SqlMapper_Bundle\Entity;
 
-use Aura\SqlMapper_Bundle\Exception\NoSuchMapper;
+use Aura\SqlMapper_Bundle\Exception\NoSuchMember;
 use IteratorAggregate;
 
 /**
@@ -75,14 +75,14 @@ class EntityMapperLocator implements IteratorAggregate
      *
      * @return EntityMapperInterface A mapper instance.
      *
-     * @throws NoSuchMapper when an unrecognized mapper name is
+     * @throws NoSuchMember when an unrecognized mapper name is
      * given.
      *
      */
     public function __get($name)
     {
         if (! isset($this->factories[$name])) {
-            throw new NoSuchMapper($name);
+            throw new NoSuchMember($name);
         }
 
         if (! isset($this->instances[$name])) {

@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Entity;
 
+use Aura\SqlMapper_Bundle\Exception\NoSuchMember;
 use Aura\SqlMapper_Bundle\RepositoryInterface;
 
 class EntityRepository implements RepositoryInterface
@@ -12,7 +13,7 @@ class EntityRepository implements RepositoryInterface
      * @var EntityMapperLocator
      *
      */
-    protected $row_mapper_locator;
+    protected $locator;
 
     /**
      *
@@ -24,7 +25,7 @@ class EntityRepository implements RepositoryInterface
      */
     public function __construct(EntityMapperLocator $row_mapper_locator)
     {
-        $this->row_mapper_locator = $row_mapper_locator;
+        $this->locator = $row_mapper_locator;
     }
 
     /**
@@ -148,14 +149,14 @@ class EntityRepository implements RepositoryInterface
      *
      * @param string $mapper_name The name of the map to retrieve.
      *
-     * @return RowMapperInterface || false
+     * @return EntityMapperInterface || false
      *
      */
     public function getMapper($mapper_name)
     {
         try {
-            return $this->row_mapper_locator->__get($mapper_name);
-        } catch (Exception\NoSuchMapper $e) {
+            return $this->locator->__get($mapper_name);
+        } catch (NoSuchMember $e) {
             return false;
         }
     }
