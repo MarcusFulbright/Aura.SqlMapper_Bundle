@@ -1,20 +1,24 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Integration;
 
-use Aura\SqlMapper_Bundle\Tests\Fixtures\AbstractIntegrationTestCase;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Assertions;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeGateway;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
 
-class GatewayTest extends AbstractIntegrationTestCase
+class GatewayTest extends \PHPUnit_Framework_TestCase
 {
+    use Assertions;
+
     /** @var FakeGateway */
     protected $gateway;
 
     protected function setUp()
     {
-        $this->setUpEntities();
-        $this->loadFixtures();
-        $this->gateway = $this->gateways['aura_test_table'];
-
+        $gateway_gen = new GatewayGenerator();
+        $fixtures = new SqliteFixture($gateway_gen->getConnection()->getWrite());
+        $this->gateway = $gateway_gen->getGateway('user');
+        $fixtures->exec();
     }
 
     public function testGetPrimaryCol()

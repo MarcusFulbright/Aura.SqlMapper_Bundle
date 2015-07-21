@@ -17,6 +17,6 @@ namespace Aura\SqlMapper_Bundle\Exception;
  * @package Aura.SqlMapper_Bundle
  *
  */
-class NoSuchMapper extends \Exception
+class NoSuchMember extends \Exception
 {
 }

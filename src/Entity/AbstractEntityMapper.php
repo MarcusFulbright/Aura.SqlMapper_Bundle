@@ -57,7 +57,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
 
     /**
      *
-     * A row data gateway.
+     * RowGateway.
      *
      * @var RowGatewayInterface
      *
@@ -87,7 +87,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
      *
      * Constructor.
      *
-     * @param RowGatewayInterface $gateway A row data gateway.
+     * @param RowGatewayInterface $gateway Gateway.
      *
      * @param ObjectFactoryInterface $object_factory An object factory.
      *
@@ -160,7 +160,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
      */
     public function getIdentityField()
     {
-        return $this->getFieldFromCol($this->gateway->getPrimaryCol());
+        return $this->getColsFields()[$this->gateway->getPrimaryCol()];
     }
 
     public function isAutoPrimary()
@@ -182,8 +182,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
      */
     public function getIdentityValue($object)
     {
-        $field = $this->getIdentityField();
-        return $object->$field;
+        return $this->getValue($object, $this->getIdentityField());
     }
 
     /**
@@ -205,8 +204,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
      */
     public function setIdentityValue($object, $value)
     {
-        $field = $this->getIdentityField();
-        $object->$field = $value;
+        $this->setValue($object, $this->getIdentityField(), $value);
     }
 
     /**
@@ -627,7 +625,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
     public function update($object, $initial_data = null)
     {
         $this->filter->forUpdate($object);
-        $cached = $this->cache?$this->cache->getCachedData($object):null;
+        $cached = $this->cache ? $this->cache->getCachedData($object) : null;
         $data = $this->getRowData($object, $initial_data?:$cached);
 
         // No-op and return true if there are no changes.
@@ -730,10 +728,9 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
         if ($initial_data) {
             return $this->getRowDataChanges($object, $initial_data);
         }
-
         $data = [];
         foreach ($this->getColsFields() as $col => $field) {
-            $data[$col] = $object->$field;
+            $data[$col] = $this->getValue($object, $field);
         }
         return $data;
     }
@@ -754,20 +751,17 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
     protected function getRowDataChanges($object, $initial_data)
     {
         $initial_data = (object) $initial_data;
-
         // always retain the primary identity
         $primary_col = $this->gateway->getPrimaryCol();
         $identity_value = $this->getIdentityValue($object);
         $data = array($primary_col => $identity_value);
-
         foreach ($this->getColsFields() as $col => $field) {
-            $new = $object->$field;
+            $new = $this->getValue($object, $field);
             $old = $initial_data->$field;
             if (! $this->compare($new, $old)) {
                 $data[$col] = $new;
             }
         }
-
         return $data;
     }
 
@@ -794,5 +788,79 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
             // non-numeric, compare strictly
             return $new === $old;
         }
+    }
+
+    /**
+     *
+     * Uses reflection to get the value of a field on a object.
+     *
+     * @param object $object the object to reflect.
+     *
+     * @param string $field field to get the value of.
+     *
+     * @return mixed
+     *
+     */
+    protected function getValue($object, $field)
+    {
+        $prop = $this->getProperty(
+            $this->getReflection($object),
+            $field
+        );
+        return $prop->getValue($object);
+    }
+
+    /**
+     *
+     * Use Reflection to set the value of an object's field
+     *
+     * @param $object
+     *
+     * @param $field
+     *
+     * @param $value
+     *
+     */
+    protected function setValue($object, $field, $value)
+    {
+        $prop = $this->getProperty(
+            $this->getReflection($object),
+            $field
+        );
+        $prop->setValue($object, $value);
+    }
+
+    /**
+     *
+     * Get a reflection of the given object.
+     *
+     * @param $object
+     *
+     * @return \ReflectionObject
+     *
+     */
+    protected function getReflection($object)
+    {
+        return new \ReflectionObject($object);
+    }
+
+    /**
+     *
+     * Get a Reflection of the given property from the given ReflectionObject.
+     *
+     * Property will be set to accessible.
+     *
+     * @param \ReflectionObject $refl
+     *
+     * @param $field
+     *
+     * @return \ReflectionProperty
+     *
+     */
+    protected function getProperty(\ReflectionObject $refl, $field)
+    {
+        $prop = $refl->getProperty($field);
+        $prop->setAccessible(true);
+        return $prop;
     }
 }

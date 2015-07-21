@@ -44,10 +44,9 @@ class SqliteFixture
 
     public $table;
 
-    public function __construct($connection, $table)
+    public function __construct($connection)
     {
         $this->connection = $connection;
-        $this->table = $table;
     }
 
     public function exec()

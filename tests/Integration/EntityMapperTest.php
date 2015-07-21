@@ -1,47 +1,116 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Test\Integration;
 
-use Aura\SqlMapper_Bundle\Tests\Fixtures\AbstractIntegrationTestCase;
+use Aura\Sql\Profiler;
+use Aura\SqlMapper_Bundle\Row\GatewayLocator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Assertions;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Entities\User;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\EntityMapperGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeEntityMapper;
-use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeGateway;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
 
-class MapperTest extends AbstractIntegrationTestCase
+class EntityMapperTest extends \PHPUnit_Framework_TestCase
 {
+    use Assertions;
+
     /** @var FakeEntityMapper */
     protected $mapper;
 
-    /** @var FakeGateway */
-    protected $gateway;
+    /** @var GatewayLocator */
+    protected $locator;
+
+    /** @var Profiler */
+    protected $profiler;
 
     protected function setUp()
     {
-        $this->setUpEntities();
-        $this->loadFixtures();
-        $this->mapper = $this->factories['aura_test_table']();
-        $this->gateway = $this->gateways['aura_test_table'];
+        $gateway_gen = new GatewayGenerator();
+        $mapper_gen = new EntityMapperGenerator();
+        $fixtures = new SqliteFixture($gateway_gen->getConnection()->getDefault());
+        $fixtures->exec();
+        $this->profiler = $gateway_gen->getProfiler();
+
+        $this->locator = $gateway_gen->setUpGatewayLocator(['user']);
+        $this->mapper = $mapper_gen->getUser($this->locator);
+
+    }
+
+    protected function getAnna()
+    {
+        $anna = new User();
+        $anna->setId('1');
+        $anna->setName('Anna');
+        $anna->setBuilding('1');
+        $anna->setFloor('1');
+        return $anna;
+    }
+
+    protected function getBetty()
+    {
+        $betty = new User();
+        $betty->setId('2');
+        $betty->setName('Betty');
+        $betty->setBuilding('1');
+        $betty->setFloor('2');
+        return $betty;
+    }
+
+    protected function getClara()
+    {
+        $clara = new User();
+        $clara->setId('3');
+        $clara->setName('Clara');
+        $clara->setBuilding('1');
+        $clara->setFloor('3');
+        return $clara;
+    }
+
+    protected function getDonna()
+    {
+        $donna = new User();
+        $donna->setId('4');
+        $donna->setName('Donna');
+        $donna->setBuilding('1');
+        $donna->setFloor('1');
+        return $donna;
+    }
+
+    protected function getEdna()
+    {
+        $edna = new User();
+        $edna->setId('5');
+        $edna->setName('Edna');
+        $edna->setBuilding('1');
+        $edna->setFloor('2');
+        return $edna;
+    }
+
+    protected function getFiona()
+    {
+        $fiona = new User();
+        $fiona->setId('6');
+        $fiona->setName('Fiona');
+        $fiona->setBuilding('1');
+        $fiona->setFloor('3');
+        return $fiona;
     }
 
     public function testGetIdentityValue()
     {
-        $object = (object) [
-            'id' => 88
-        ];
+        $obj = new User();
+        $obj->setId(88);
 
         $expect = 88;
-        $actual = $this->mapper->getIdentityValue($object);
-        $this->assertSame($expect, $actual);
-
+        $actual = $this->mapper->getIdentityValue($obj);
+        $this->assertEquals($expect, $actual);
     }
 
     public function testFetchObject()
     {
         $actual = $this->mapper->fetchObjectBy(['id' => 1]);
-        $expect = (object) [
-            'id' => '1',
-            'name' => 'Anna',
-            'building' => '1',
-            'floor' => '1',
-        ];
+        $expect = $this->getAnna();
+
         $this->assertEquals($expect, $actual);
 
         $actual = $this->mapper->fetchObjectBy(['id' => 0]);
@@ -52,24 +121,9 @@ class MapperTest extends AbstractIntegrationTestCase
     {
         $actual = $this->mapper->fetchObjectsBy(['id' => [1, 2, 3]], 'id');
         $expect = [
-            '1' => (object) [
-                'id' => '1',
-                'name' => 'Anna',
-                'building' => '1',
-                'floor' => '1',
-            ],
-            '2' => (object) [
-                'id' => '2',
-                'name' => 'Betty',
-                'building' => '1',
-                'floor' => '2',
-            ],
-            '3' => (object) [
-                'id' => '3',
-                'name' => 'Clara',
-                'building' => '1',
-                'floor' => '3',
-            ],
+            '1' => $this->getAnna(),
+            '2' => $this->getBetty(),
+            '3' => $this->getClara()
         ];
         $this->assertEquals($expect, $actual);
 
@@ -81,24 +135,9 @@ class MapperTest extends AbstractIntegrationTestCase
     {
         $actual = $this->mapper->fetchCollectionBy(['id' => [1, 2, 3]]);
         $expect = [
-            (object) [
-                'id' => '1',
-                'name' => 'Anna',
-                'building' => '1',
-                'floor' => '1',
-            ],
-            (object) [
-                'id' => '2',
-                'name' => 'Betty',
-                'building' => '1',
-                'floor' => '2',
-            ],
-            (object) [
-                'id' => '3',
-                'name' => 'Clara',
-                'building' => '1',
-                'floor' => '3',
-            ],
+            $this->getAnna(),
+            $this->getBetty(),
+            $this->getClara()
         ];
         $this->assertEquals($expect, $actual);
 
@@ -111,46 +150,16 @@ class MapperTest extends AbstractIntegrationTestCase
         $actual = $this->mapper->fetchCollectionsBy(['building' => 1], 'floor');
         $expect = [
             '1' => [
-                (object) [
-                    'id' => '1',
-                    'name' => 'Anna',
-                    'building' => '1',
-                    'floor' => '1',
-                ],
-                (object) [
-                    'id' => '4',
-                    'name' => 'Donna',
-                    'building' => '1',
-                    'floor' => '1',
-                ],
+                $this->getAnna(),
+                $this->getDonna()
             ],
             '2' => [
-                (object) [
-                    'id' => '2',
-                    'name' => 'Betty',
-                    'building' => '1',
-                    'floor' => '2',
-                ],
-                (object) [
-                    'id' => '5',
-                    'name' => 'Edna',
-                    'building' => '1',
-                    'floor' => '2',
-                ],
+                $this->getBetty(),
+                $this->getEdna()
             ],
             '3' => [
-                (object) [
-                    'id' => '3',
-                    'name' => 'Clara',
-                    'building' => '1',
-                    'floor' => '3',
-                ],
-                (object) [
-                    'id' => '6',
-                    'name' => 'Fiona',
-                    'building' => '1',
-                    'floor' => '3',
-                ],
+                $this->getClara(),
+                $this->getFiona()
             ],
         ];
 
@@ -159,21 +168,20 @@ class MapperTest extends AbstractIntegrationTestCase
 
     public function testInsert()
     {
-        $object = (object) [
-            'id' => null,
-            'name' => 'Mona',
-            'building' => '10',
-            'floor' => '99',
-        ];
+        $object = new User();
+        $object->setId(null);
+        $object->setName('Mona');
+        $object->setBuilding('10');
+        $object->setFloor('99');
 
         $affected = $this->mapper->insert($object);
         $this->assertTrue($affected == 1);
-        $this->assertEquals(13, $object->id);
+        $this->assertEquals(13, $object->getId());
 
         // did it insert?
         $actual = $this->mapper->fetchObjectBy(['id' => 13]);
-        $this->assertEquals('13', $actual->id);
-        $this->assertEquals('Mona', $actual->name);
+        $this->assertEquals('13', $actual->getId());
+        $this->assertEquals('Mona', $actual->getName());
 
         // try to insert again, should fail
         $this->silenceErrors();
@@ -184,7 +192,7 @@ class MapperTest extends AbstractIntegrationTestCase
     {
         // fetch an object, then modify and update it
         $object = $this->mapper->fetchObjectBy(['name' => 'Anna']);
-        $object->name = 'Annabelle';
+        $object->setName('Annabelle');
         $affected = $this->mapper->update($object);
 
         // did it update?
@@ -194,16 +202,16 @@ class MapperTest extends AbstractIntegrationTestCase
 
         // did anything else update?
         $actual = $this->mapper->fetchObjectBy(['id' => 2]);
-        $this->assertEquals('2', $actual->id);
-        $this->assertEquals('Betty', $actual->name);
+        $this->assertEquals('2', $actual->getId());
+        $this->assertEquals('Betty', $actual->getName());
     }
 
     public function testUpdateOnlyChanges()
     {
         // fetch an object, retain its original data, then change it
         $object = $this->mapper->fetchObjectBy(['name' => 'Anna']);
-        $initial_data = (array) $object;
-        $object->name = 'Annabelle';
+        $initial_data = $object->toDbData();
+        $object->setName('Annabelle');
 
         // update with profiling turned on
         $this->profiler->setActive(true);
@@ -233,7 +241,7 @@ class MapperTest extends AbstractIntegrationTestCase
         $this->assertFalse($actual);
 
         // do we still have everything else?
-        $actual = $this->gateway->select()->fetchAll();
+        $actual = $this->locator->__get('user_gateway')->select()->fetchAll();
         $expect = 11;
         $this->assertEquals($expect, count($actual));
     }
@@ -256,7 +264,7 @@ class MapperTest extends AbstractIntegrationTestCase
 
     protected function silenceErrors()
     {
-        $conn = $this->gateway->getWriteConnection();
+        $conn = $this->locator->__get('user_gateway')->getWriteConnection();
         $conn->setAttribute($conn::ATTR_ERRMODE, $conn::ERRMODE_SILENT);
     }
 }
