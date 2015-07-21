@@ -3,16 +3,18 @@ namespace Aura\SqlMapper_Bundle\Test\Integration;
 
 use Aura\Sql\Profiler;
 use Aura\SqlMapper_Bundle\Row\GatewayLocator;
-use Aura\SqlMapper_Bundle\Tests\Fixtures\Assertions;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\Assertions;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Entities\User;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\EntityMapperGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeEntityMapper;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\UserEntityUtil;
 
 class EntityMapperTest extends \PHPUnit_Framework_TestCase
 {
     use Assertions;
+    use UserEntityUtil;
 
     /** @var FakeEntityMapper */
     protected $mapper;
@@ -34,66 +36,6 @@ class EntityMapperTest extends \PHPUnit_Framework_TestCase
         $this->locator = $gateway_gen->setUpGatewayLocator(['user']);
         $this->mapper = $mapper_gen->getUser($this->locator);
 
-    }
-
-    protected function getAnna()
-    {
-        $anna = new User();
-        $anna->setId('1');
-        $anna->setName('Anna');
-        $anna->setBuilding('1');
-        $anna->setFloor('1');
-        return $anna;
-    }
-
-    protected function getBetty()
-    {
-        $betty = new User();
-        $betty->setId('2');
-        $betty->setName('Betty');
-        $betty->setBuilding('1');
-        $betty->setFloor('2');
-        return $betty;
-    }
-
-    protected function getClara()
-    {
-        $clara = new User();
-        $clara->setId('3');
-        $clara->setName('Clara');
-        $clara->setBuilding('1');
-        $clara->setFloor('3');
-        return $clara;
-    }
-
-    protected function getDonna()
-    {
-        $donna = new User();
-        $donna->setId('4');
-        $donna->setName('Donna');
-        $donna->setBuilding('1');
-        $donna->setFloor('1');
-        return $donna;
-    }
-
-    protected function getEdna()
-    {
-        $edna = new User();
-        $edna->setId('5');
-        $edna->setName('Edna');
-        $edna->setBuilding('1');
-        $edna->setFloor('2');
-        return $edna;
-    }
-
-    protected function getFiona()
-    {
-        $fiona = new User();
-        $fiona->setId('6');
-        $fiona->setName('Fiona');
-        $fiona->setBuilding('1');
-        $fiona->setFloor('3');
-        return $fiona;
     }
 
     public function testGetIdentityValue()

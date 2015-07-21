@@ -388,7 +388,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
         $results = $this->fetchObjects($select, $key_field, $cached?$cached->ids:null);
         if ($cached) {
             foreach ($cached->results as $row) {
-                $results[$row->$key_field] = $row;
+                $results[$this->getValue($row, $key_field)] = $row;
             }
         }
         return $results;
@@ -757,7 +757,7 @@ abstract class AbstractEntityMapper implements EntityMapperInterface
         $data = array($primary_col => $identity_value);
         foreach ($this->getColsFields() as $col => $field) {
             $new = $this->getValue($object, $field);
-            $old = $initial_data->$field;
+            $old = $this->getValue($initial_data, $field);
             if (! $this->compare($new, $old)) {
                 $data[$col] = $new;
             }

@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Integration;
 
-use Aura\SqlMapper_Bundle\Tests\Fixtures\Assertions;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\Assertions;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeGateway;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;

@@ -3,7 +3,6 @@ namespace Aura\SqlMapper_Bundle\Entity;
 
 interface EntityCacheInterface
 {
-
     /**
      *
      * Gets a specific row by identity from the cache.

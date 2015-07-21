@@ -1,12 +1,22 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
-use Aura\SqlMapper_Bundle\Tests\Fixtures\AbstractIntegrationTestCase;
+use Aura\Sql\Profiler;
+use Aura\SqlMapper_Bundle\Entity\EntityCache;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Entities\User;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\Assertions;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\EntityMapperGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeEntityMapper;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\FakeGateway;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Utils\UserEntityUtil;
 
-class CachingMapperTest extends AbstractIntegrationTestCase
+class CachingMapperTest extends \PHPUnit_Framework_TestCase
 {
+    use Assertions;
+    use UserEntityUtil;
+
     /** @var  FakeEntityMapper */
     protected $mapper;
 
@@ -16,13 +26,21 @@ class CachingMapperTest extends AbstractIntegrationTestCase
     /** @var FakeGateway */
     protected $gateway;
 
+    /** @var Profiler */
+    protected $profiler;
+
     protected function setUp()
     {
-        $this->setUpEntities();
-        $this->mapper = $this->factories['aura_test_table']();
+        $mapper_gen = new EntityMapperGenerator();
+        $gateway_gen = new GatewayGenerator();
+        $locator = $gateway_gen->setUpGatewayLocator(['user']);
+        $this->gateway = $locator->__get('user_gateway');
+        $cache = new EntityCache('id', 30);
+        $this->mapper = $mapper_gen->getUser($locator, $cache);
+        $fixtures = new SqliteFixture($gateway_gen->getConnection()->getWrite());
+        $fixtures->exec();
+        $this->profiler = $gateway_gen->getProfiler();
         $this->reflection = new \ReflectionClass($this->mapper);
-        $this->gateway = $this->gateways['aura_test_table'];
-        $this->loadFixtures();
     }
 
     /**
@@ -43,9 +61,8 @@ class CachingMapperTest extends AbstractIntegrationTestCase
 
     public function testGetIdentityValue()
     {
-        $object = (object) [
-            'id' => 88
-        ];
+        $object = new User();
+        $object->setId(88);
 
         $expect = 88;
         $actual = $this->mapper->getIdentityValue($object);
@@ -56,12 +73,7 @@ class CachingMapperTest extends AbstractIntegrationTestCase
     public function testFetchObject()
     {
         $actual = $this->mapper->fetchObjectBy(['id' => 1]);
-        $expect = (object) [
-            'id' => '1',
-            'name' => 'Anna',
-            'building' => '1',
-            'floor' => '1',
-        ];
+        $expect = $this->getAnna();
         $this->assertEquals($expect, $actual);
 
         $actual = $this->mapper->fetchObjectBy(['id' => 0]);
@@ -72,24 +84,9 @@ class CachingMapperTest extends AbstractIntegrationTestCase
     {
         $actual = $this->mapper->fetchObjectsBy(['id' => [1, 2, 3]], 'id');
         $expect = [
-            '1' => (object) [
-                'id' => '1',
-                'name' => 'Anna',
-                'building' => '1',
-                'floor' => '1',
-            ],
-            '2' => (object) [
-                'id' => '2',
-                'name' => 'Betty',
-                'building' => '1',
-                'floor' => '2',
-            ],
-            '3' => (object) [
-                'id' => '3',
-                'name' => 'Clara',
-                'building' => '1',
-                'floor' => '3',
-            ],
+            '1' => $this->getAnna(),
+            '2' => $this->getBetty(),
+            '3' => $this->getClara()
         ];
         $this->assertEquals($expect, $actual);
 
@@ -101,24 +98,9 @@ class CachingMapperTest extends AbstractIntegrationTestCase
     {
         $actual = $this->mapper->fetchCollectionBy(['id' => [1, 2, 3]]);
         $expect = [
-            (object) [
-                'id' => '1',
-                'name' => 'Anna',
-                'building' => '1',
-                'floor' => '1',
-            ],
-            (object) [
-                'id' => '2',
-                'name' => 'Betty',
-                'building' => '1',
-                'floor' => '2',
-            ],
-            (object) [
-                'id' => '3',
-                'name' => 'Clara',
-                'building' => '1',
-                'floor' => '3',
-            ],
+            $this->getAnna(),
+            $this->getBetty(),
+            $this->getClara()
         ];
         $this->assertEquals($expect, $actual);
 
@@ -131,69 +113,33 @@ class CachingMapperTest extends AbstractIntegrationTestCase
         $actual = $this->mapper->fetchCollectionsBy(['building' => 1], 'floor');
         $expect = [
             '1' => [
-                (object) [
-                    'id' => '1',
-                    'name' => 'Anna',
-                    'building' => '1',
-                    'floor' => '1',
-                ],
-                (object) [
-                    'id' => '4',
-                    'name' => 'Donna',
-                    'building' => '1',
-                    'floor' => '1',
-                ],
+                $this->getAnna(),
+                $this->getDonna()
             ],
             '2' => [
-                (object) [
-                    'id' => '2',
-                    'name' => 'Betty',
-                    'building' => '1',
-                    'floor' => '2',
-                ],
-                (object) [
-                    'id' => '5',
-                    'name' => 'Edna',
-                    'building' => '1',
-                    'floor' => '2',
-                ],
+                $this->getBetty(),
+                $this->getEdna()
             ],
             '3' => [
-                (object) [
-                    'id' => '3',
-                    'name' => 'Clara',
-                    'building' => '1',
-                    'floor' => '3',
-                ],
-                (object) [
-                    'id' => '6',
-                    'name' => 'Fiona',
-                    'building' => '1',
-                    'floor' => '3',
-                ],
+                $this->getClara(),
+                $this->getFiona()
             ],
         ];
-
         $this->assertEquals($expect, $actual);
     }
 
     public function testInsert()
     {
-        $object = (object) [
-            'id' => null,
-            'name' => 'Mona',
-            'building' => '10',
-            'floor' => '99',
-        ];
+        $object = $this->newUser(null, 'Mona', '10', '99');
 
         $affected = $this->mapper->insert($object);
         $this->assertTrue($affected == 1);
-        $this->assertEquals(13, $object->id);
+        $this->assertEquals(13, $object->getId());
 
         // did it insert?
         $actual = $this->mapper->fetchObjectBy(['id' => 13]);
-        $this->assertEquals('13', $actual->id);
-        $this->assertEquals('Mona', $actual->name);
+        $this->assertEquals('13', $actual->getId());
+        $this->assertEquals('Mona', $actual->getName());
 
         // try to insert again, should fail
         $this->silenceErrors();
@@ -204,7 +150,7 @@ class CachingMapperTest extends AbstractIntegrationTestCase
     {
         // fetch an object, then modify and update it
         $object = $this->mapper->fetchObjectBy(['name' => 'Anna']);
-        $object->name = 'Annabelle';
+        $object->setName('Annabelle');
         $affected = $this->mapper->update($object);
 
         // did it update?
@@ -214,15 +160,15 @@ class CachingMapperTest extends AbstractIntegrationTestCase
 
         // did anything else update?
         $actual = $this->mapper->fetchObjectBy(['id' => 2]);
-        $this->assertEquals('2', $actual->id);
-        $this->assertEquals('Betty', $actual->name);
+        $this->assertEquals('2', $actual->getId());
+        $this->assertEquals('Betty', $actual->getName());
     }
 
     public function testUpdateOnlyChanges()
     {
         // fetch an object, retain its original data, then change it
         $object = $this->mapper->fetchObjectBy(['name' => 'Anna']);
-        $object->name = 'Annabelle';
+        $object->setName('Annabelle');
 
         // update with profiling turned on
         $this->profiler->setActive(true);

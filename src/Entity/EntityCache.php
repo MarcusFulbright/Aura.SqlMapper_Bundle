@@ -12,7 +12,6 @@ namespace Aura\SqlMapper_Bundle\Entity;
  */
 class EntityCache implements EntityCacheInterface
 {
-
     /**
      *
      * Cache-money.
@@ -54,7 +53,7 @@ class EntityCache implements EntityCacheInterface
     public function __construct($identity, $time_to_live = 0)
     {
         $this->cache        = new \SplObjectStorage();
-        $this->setIdentity($identity);
+        $this->identity     =($identity);
         $this->time_to_live = $time_to_live;
     }
     /**
@@ -118,7 +117,7 @@ class EntityCache implements EntityCacheInterface
     public function getCachedData($row)
     {
         $this->validateRow($row);
-        return $this->get($row->{$this->identity});
+        return $this->get($this->getIdentity($row));
     }
 
     /**
@@ -141,16 +140,16 @@ class EntityCache implements EntityCacheInterface
      *
      * Takes an instance of a row and removes any version of that row from the cache.
      *
-     * @param mixed|object $row The row to remove from the cache.
+     * @param object $row The row to remove from the cache.
      *
-     * @return mixed|null|object The row if there was a cached version, else null.
+     * @return null|object The row if there was a cached version, else null.
      *
      * @throws \Exception If provided row does not have the appropriate identity field.
      *
      */
     public function removeCachedVersion($row)
     {
-        if ($cached = $this->queryCacheInstances([$this->identity => $row->{$this->identity}], false)->results) {
+        if ($cached = $this->queryCacheInstances([$this->identity => $this->getIdentity($row)], false)->results) {
             $this->cache->detach($cached[0]);
         }
         return $cached;
@@ -243,10 +242,10 @@ class EntityCache implements EntityCacheInterface
                 $this->cache->detach($row);
             } elseif (
                 $this->rowMatchesCriteria($row, $criteria)
-                && !in_array($row->{$this->identity}, $output->ids)
+                && !in_array($this->getIdentity($row), $output->ids)
             ) {
                 $output->results[] = $clone ? clone $row : $row;
-                $output->ids[] = $row->{$this->identity};
+                $output->ids[] = $this->getIdentity($row);
             }
         }
         return $output;
@@ -271,7 +270,7 @@ class EntityCache implements EntityCacheInterface
             function ($value, $field) use ($row, &$output) {
                 $value = is_array($value) ? $value : array($value);
                 foreach ($value as $match) {
-                    if (property_exists($row, $field) && $row->$field == $match) {
+                    if (property_exists($row, $field) && $this->getFieldValue($row, $field) == $match) {
                         continue;
                     } else {
                         $output = false;
@@ -282,4 +281,38 @@ class EntityCache implements EntityCacheInterface
         );
         return $output;
     }
+
+    /**
+     *
+     * Uses Reflection to get the identity field from the given object.
+     *
+     * @param object $obj
+     *
+     * @return mixed
+     *
+     */
+    protected function getIdentity($obj)
+    {
+        return $this->getFieldValue($obj, $this->identity);
+    }
+
+    /**
+     *
+     * Uses reflection to get the value of the given for the given object.
+     *
+     * @param $obj
+     *
+     * @param $field
+     *
+     * @return mixed
+     *
+     */
+    protected function getFieldValue($obj, $field)
+    {
+        $refl = new \ReflectionObject($obj);
+        $prop = $refl->getProperty($field);
+        $prop->setAccessible(true);
+        return $prop->getValue($obj);
+    }
+
 }
