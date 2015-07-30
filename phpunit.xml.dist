@@ -6,5 +6,16 @@
         <testsuite name="Unit">
             <directory>tests/Unit/</directory>
         </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
     </testsuites>
+
+    <filter>
+        <blacklist>
+            <directory suffix=".php">C:\Users\MarcusF/Projects/Aura.SqlMapper_Bundle/vendor</directory>
+            <directory suffix=".php">C:\Users\MarcusF/Projects/Aura.SqlMapper_Bundle/tests</directory>
+            <directory suffix=".php">C:\Users\MarcusF/AppData/</directory>
+        </blacklist>
+    </filter>
 </phpunit>

@@ -1,8 +1,8 @@
 <?php
 namespace Aura\SqlMapper_Bundle;
 
+use Aura\SqlMapper_Bundle\Exception\InvalidLocatorMember;
 use Aura\SqlMapper_Bundle\Exception\NoSuchMember;
-use Aura\SqlMapper_Bundle\Row\RowGatewayInterface;
 
 abstract class AbstractLocator implements LocatorInterface
 {
@@ -34,7 +34,7 @@ abstract class AbstractLocator implements LocatorInterface
      * @throws InvalidLocatorMember if one of the members is not callable
      *
      */
-    public function __construct(array $members = [])
+    public function __construct(array $members)
     {
         foreach ($members as $member) {
             if (! is_callable($member)) {
@@ -64,7 +64,7 @@ abstract class AbstractLocator implements LocatorInterface
      *
      * @param string $key The name of the mapper instance to retrieve.
      *
-     * @return RowGatewayInterface.
+     * @return mixed.
      *
      * @throws NoSuchMember when an unrecognized member key is given
      *

@@ -1,61 +1,63 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Fixtures;
-use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
+
 use Aura\SqlMapper_Bundle\Relations\Relation;
+use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 
 class RelationGenerator
 {
-    public function getRelations(array $entities)
+    public function getRelationLocator(array $relations)
     {
-        $relations = [];
-        foreach ($entities as $entity => $mapper) {
-            $method = 'get'.ucfirst($entity);
-            $relations[strtolower($entity)] = $this->$method($mapper);
+        $output = [];
+        foreach ($relations as $relation) {
+            $method = 'get_'.$relation;
+            $output = array_merge($output, $this->$method());
         }
-        return $relations;
+        return new RelationLocator($output);
     }
 
-    protected function getBuilding(EntityMapperInterface $mapper)
+    public function get_building_to_type()
     {
         return [
-            'mapper' => $mapper,
-            'relations' => [
-                new Relation('building_type', 'type', 'code', true, Relation::HAS_ONE)
-            ]
+            'building_to_type' => function() {
+                return new Relation('building_entity', 'type', 'building_type_entity', 'code', Relation::HAS_ONE);
+            }
         ];
     }
 
-    protected function getBuildingType(EntityMapperInterface $mapper)
+    public function get_task_to_type()
     {
         return [
-            'mapper' => $mapper,
-            'relations' => null
+            'task_to_type' => function () {
+                return new Relation('task_entity', 'type', 'task_type_entity', 'code', Relation::HAS_ONE);
+            }
         ];
     }
 
-    protected function getTask(EntityMapperInterface $mapper)
+    public function get_user_to_floor()
     {
         return [
-            'mapper' => $mapper,
-            'relations' => null
+            'user_to_floor' => function() {
+                return new Relation('user_entity', 'floor', 'floor_entity', 'id', Relation::HAS_ONE);
+            }
         ];
     }
 
-    protected function getFloor(EntityMapperInterface $mapper)
+    public function get_task_aggregate_to_user()
     {
         return [
-            'mapper' => $mapper,
-            'relations' => null
+            'task_aggregate_to_user' => function() {
+                return new Relation('task_aggregate', 'userid', 'user_entity', 'id', Relation::HAS_MANY);
+            }
         ];
     }
 
-    protected function getUser(EntityMapperInterface $mapper)
+    public function get_user_to_building_aggregate()
     {
         return [
-            'mapper' => $mapper,
-            'relations' => [
-                new Relation('task', 'id', 'userid', false, Relation::HAS_MANY)
-            ]
+            'user_to_building_aggregate' => function() {
+                return new Relation('user_entity', 'building', 'building_aggregate', 'id', Relation::HAS_ONE);
+            }
         ];
     }
 }

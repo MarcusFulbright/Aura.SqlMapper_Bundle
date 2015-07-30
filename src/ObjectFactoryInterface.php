@@ -3,7 +3,7 @@ namespace Aura\SqlMapper_Bundle;
 
 interface ObjectFactoryInterface
 {
-    public function newObject(array $row = array());
+    public function newObject(array $row);
 
-    public function newCollection(array $rows = array());
+    public function newCollection(array $rows);
 }

@@ -10,7 +10,7 @@ class EntityRepository implements RepositoryInterface
      *
      * An Aggregate Mapper locator.
      *
-     * @var EntityMapperLocator
+     * @var EntityLocator
      *
      */
     protected $locator;
@@ -19,13 +19,13 @@ class EntityRepository implements RepositoryInterface
      *
      * Constructor
      *
-     * @param EntityMapperLocator $row_mapper_locator The locator for
+     * @param EntityLocator $locator The locator for
      * Aggregate Mappers.
      *
      */
-    public function __construct(EntityMapperLocator $row_mapper_locator)
+    public function __construct(EntityLocator $locator)
     {
-        $this->locator = $row_mapper_locator;
+        $this->locator = $locator;
     }
 
     /**

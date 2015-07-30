@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Fixtures;
 
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderLocator;
 use Aura\SqlMapper_Bundle\Filter;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingAggregateFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\EmployeeFactory;
@@ -20,8 +21,8 @@ class AggregateGenerator
         ],
         'relations' => [
             'user_to_floor',
-            'task_to_user',
-            'user_to_building'
+            'task_aggregate_to_user',
+            'user_to_building_aggregate'
         ]
     ];
 
@@ -48,6 +49,18 @@ class AggregateGenerator
             'task_to_type'
         ]
     ];
+
+    public function getBuilderLocator(array $aggregates)
+    {
+        $builders = [];
+        foreach ($aggregates as $aggregate) {
+            $method = 'get'.ucfirst($aggregate).'Builder';
+            $builders[$aggregate] = function() use ($method) {
+                return $this->$method();
+            };
+        }
+        return new AggregateBuilderLocator($builders);
+    }
 
     public function getEmployeeBuilder()
     {

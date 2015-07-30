@@ -2,7 +2,7 @@
 
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
-use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
 
 interface EntityMediatorInterface
 {
@@ -11,7 +11,7 @@ interface EntityMediatorInterface
      * Creates, organizes, and executes all of the select queries for the mappers touched
      * by this AggregateMapper based on the provided criteria.
      *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * @param AggregateBuilderInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param array $criteria The array of criteria the object needs to meet.
@@ -19,13 +19,13 @@ interface EntityMediatorInterface
      * @return array An array representing the db output, as described by row domains.
      *
      */
-    public function select(AggregateMapperInterface $mapper, array $criteria = null);
+    public function select(AggregateBuilderInterface $mapper, array $criteria = null);
 
     /**
      *
      * Creates a new representation of the provided object in the DB.
      *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * @param AggregateBuilderInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param array $object The instance of the object we want to create.
@@ -33,32 +33,32 @@ interface EntityMediatorInterface
      * @return bool Whether or not this operation was successful.
      *
      */
-    public function create(AggregateMapperInterface $mapper, $object);
+    public function create(AggregateBuilderInterface $mapper, $object);
 
     /**
      *
      * Updates the provided object in the DB.
      *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * @param AggregateBuilderInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param array $object The instance of the object we want to update.
      *
      * @return bool Whether or not this operation was successful.
      */
-    public function update(AggregateMapperInterface $mapper, $object);
+    public function update(AggregateBuilderInterface $mapper, $object);
 
     /**
      *
      * Deletes the provided object from the DB.
      *
-     * @param AggregateMapperInterface $mapper The mapper for the Aggregate Domain Object
+     * @param AggregateBuilderInterface $mapper The mapper for the Aggregate Domain Object
      * we are concerned with.
      *
      * @param array $object The instance of the object we want to delete.
      *
      * @return bool Whether or not this operation was successful.
      */
-    public function delete(AggregateMapperInterface $mapper, $object);
+    public function delete(AggregateBuilderInterface $mapper, $object);
 
 }
