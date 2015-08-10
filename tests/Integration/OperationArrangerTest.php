@@ -2,14 +2,20 @@
 namespace Aura\SqlMapper_Bundle;
 
 use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderLocator;
+<<<<<<< HEAD
 use Aura\SqlMapper_Bundle\EntityMediation\EntityOperation;
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 use Aura\SqlMapper_Bundle\EntityMediation\EntityOperationFactory;
 use Aura\SqlMapper_Bundle\EntityMediation\OperationManager;
 use Aura\SqlMapper_Bundle\EntityMediation\PlaceHolderFactory;
 use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\AggregateGenerator;
+<<<<<<< HEAD
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingTypeFactory;
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\RelationGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
@@ -25,6 +31,7 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
     /** @var RelationLocator */
     protected $relation_locator;
 
+<<<<<<< HEAD
     /** @var EntityOperationFactory */
     protected $operation_factory;
 
@@ -37,6 +44,8 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
     /** @var PlaceHolderFactory */
     protected $place_holder_factory;
 
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     public function setUp()
     {
         $aggregate_gen = new AggregateGenerator();
@@ -53,24 +62,33 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
 
         $this->builder_locator = $aggregate_gen->getBuilderLocator($aggregates);
         $this->relation_locator = $relation_gen->getRelationLocator($relations);
+<<<<<<< HEAD
         $this->operation_factory = new EntityOperationFactory();
         $this->manager = new OperationManager(
             $this->operation_factory,
+=======
+        $this->manager = new OperationManager(
+            new EntityOperationFactory(),
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
             new PlaceHolderFactory(),
             $this->relation_locator
         );
 
         $fixtures = new SqliteFixture($gateway_gen->getConnection()->getWrite());
         $fixtures->exec();
+<<<<<<< HEAD
 
         $this->building_factory = new BuildingFactory();
         $this->building_type_factory = new BuildingTypeFactory();
         $this->place_holder_factory = new PlaceHolderFactory();
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     }
 
     public function testGetOrderForEmployee()
     {
         $expected = [
+<<<<<<< HEAD
             0 => [
                 'user_to_floor' => [
                     'entities' => [
@@ -95,10 +113,17 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
                 ],
                 'relation' => $this->relation_locator->__get('task_aggregate_to_user')
             ]
+=======
+            'floor_entity',
+            'building_aggregate',
+            'user_entity',
+            'task_aggregate'
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
         ];
         $actual = $this->manager->getOrder($this->builder_locator->__get('employee'));
         $this->assertEquals($expected, $actual);
     }
+<<<<<<< HEAD
 /*
     public function testGetOrderForTask()
     {
@@ -110,10 +135,19 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
                 ],
                 'relation' => $this->relation_locator->__get('task_to_type')
             ]
+=======
+
+    public function testGetOrderForTask()
+    {
+        $expected = [
+            'task_type_entity',
+            'task_entity'
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
         ];
         $actual = $this->manager->getOrder($this->builder_locator->__get('task'));
         $this->assertEquals($expected, $actual);
     }
+<<<<<<< HEAD
 
     public function testGorOrderForBuilding()
     {
@@ -161,4 +195,6 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual);
     }
 */
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 }

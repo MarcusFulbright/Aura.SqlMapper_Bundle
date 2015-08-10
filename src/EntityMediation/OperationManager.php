@@ -2,7 +2,10 @@
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
 use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
+<<<<<<< HEAD
 use Aura\SqlMapper_Bundle\Relations\Relation;
+=======
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 
 /**
@@ -41,13 +44,18 @@ class OperationManager
         PlaceHolderFactory $placeHolder_factory,
         RelationLocator $locator
     ) {
+<<<<<<< HEAD
         $this->operation_factory = $factory;
+=======
+        $this->factory = $factory;
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
         $this->locator = $locator;
         $this->placeholder_factory = $placeHolder_factory;
     }
 
     public function getOrder(AggregateBuilderInterface $builder)
     {
+<<<<<<< HEAD
         //set both inverse and owning side
         //if inverse side has been previously inserted as owning side, remove it from that relation's entities list and put it at the end of the array
         $order = [];
@@ -108,5 +116,29 @@ class OperationManager
             $criteria = [$relation->getOwningField() => $func];
         }
         return $criteria;
+=======
+        $order = [];
+        $owning_sides = [];
+        foreach ($builder->getRelations() as $relation_name) {
+            $relation = $this->locator->__get($relation_name);
+            $inverse_entity = $relation->getInverseEntity();
+            $owning_entity = $relation->getOwningEntity();
+            $has_owning = array_search($owning_entity, $order);
+            if ($has_owning == true) {
+                $piece = array_splice($order, $has_owning, count($order));
+                array_unshift($piece, $inverse_entity);
+                $order = array_merge($order, $piece);
+            } else {
+                $owning_sides[] = $owning_entity;
+                $order[] = $inverse_entity;
+            }
+        }
+        foreach ($owning_sides as $owning_side) {
+            if (array_search($owning_side, $order) === false) {
+                $order[] = $owning_side;
+            }
+        }
+        return $order;
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     }
 }

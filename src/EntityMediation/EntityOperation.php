@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
+<<<<<<< HEAD
 class EntityOperation
 {
     /** @var string */
@@ -33,6 +34,23 @@ class EntityOperation
     {
         $this->entity_name = $entity_name;
     }
+=======
+use Aura\SqlMapper_Bundle\Relations\Relation;
+
+/*
+ * @todo inject the EntityMapper into here as well
+ */
+class EntityOperation
+{
+    /** @var string */
+    protected $method;
+
+    /** @var array */
+    protected $fields = [];
+
+    /** @var OperationCriteria */
+    protected $criteria;
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 
     /** @return string */
     public function getMethod()
@@ -46,6 +64,7 @@ class EntityOperation
         $this->method = $method;
     }
 
+<<<<<<< HEAD
     /** @return object */
     public function getInstance()
     {
@@ -59,14 +78,43 @@ class EntityOperation
     }
 
     /** @return array */
+=======
+    /** @return array */
+    public function getFields()
+    {
+        return $this->fields;
+    }
+
+    /** @param array $fields */
+    public function setFields($fields)
+    {
+        $this->fields = $fields;
+    }
+
+    /** @return OperationCriteria */
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     public function getCriteria()
     {
         return $this->criteria;
     }
 
+<<<<<<< HEAD
     /** @param array $criteria */
     public function setCriteria($criteria)
     {
         $this->criteria = $criteria;
     }
+=======
+    /** @param OperationCriteria $criteria */
+    public function setCriteria(OperationCriteria $criteria)
+    {
+        $this->criteria = $criteria;
+    }
+
+    /** @return Relation */
+    public function getRelation()
+    {
+        return $this->criteria->getRelation();
+    }
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 }

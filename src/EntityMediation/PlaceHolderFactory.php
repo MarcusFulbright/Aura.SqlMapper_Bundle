@@ -3,6 +3,7 @@ namespace Aura\SqlMapper_Bundle\EntityMediation;
 
 class PlaceHolderFactory
 {
+<<<<<<< HEAD
     public function getObjectPlaceHolder($object, $field)
     {
         $callable = function() use ($object, $field) {
@@ -27,5 +28,10 @@ class PlaceHolderFactory
             return $values;
         };
         return new PlaceHolder($callable);
+=======
+    public function newPlaceHolder(callable $value)
+    {
+        return new PlaceHolder($value);
+>>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     }
 }
