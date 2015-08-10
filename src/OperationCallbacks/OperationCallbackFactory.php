@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
 use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
 use Aura\SqlMapper_Bundle\EntityMediation\Transaction;
 use Aura\SqlMapper_Bundle\Entity\EntityMapperInterface;
@@ -31,12 +32,10 @@ class OperationCallbackFactory implements CallbackFactoryInterface
      * {@inheritdoc}
      */
     public function getIdentifierCallback(
-        AggregateMapperInterface $mapper,
-        EntityRepository $entity_repository,
-        OperationArranger $arranger,
+        AggregateBuilderInterface $builder,
         PlaceholderResolver $resolver
     ) {
-        return new SelectIdentifierCallback($mapper, $entity_repository, $arranger, $resolver);
+        return new SelectIdentifierCallback($builder, $resolver);
     }
 
     /**

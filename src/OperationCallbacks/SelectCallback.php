@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
 use Aura\SqlMapper_Bundle\Entity\EntityRepository;
 use Aura\SqlMapper_Bundle\EntityMediation\OperationArranger;
 use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
@@ -16,8 +16,8 @@ class SelectCallback implements SelectCallbackInterface
     /** @var EntityRepository */
     protected $entity_repository;
 
-    /** @var AggregateMapperInterface */
-    protected $mapper;
+    /** @var AggregateBuilderInterface */
+    protected $builder;
 
     /** @var OperationArranger */
     protected $arranger;
@@ -26,7 +26,7 @@ class SelectCallback implements SelectCallbackInterface
     protected $resolver;
 
     /**
-     * @param AggregateMapperInterface $mapper
+     * @param AggregateBuilderInterface $builder
      *
      * @param EntityRepository $entity_repository
      *
@@ -36,13 +36,13 @@ class SelectCallback implements SelectCallbackInterface
      *
      */
     public function __construct(
-        AggregateMapperInterface $mapper,
+        AggregateBuilderInterface $builder,
         EntityRepository $entity_repository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver
     ) {
         $this->entity_repository = $entity_repository;
-        $this->mapper = $mapper;
+        $this->builder = $builder;
         $this->arranger = $arranger;
         $this->resolver = $resolver;
     }
@@ -59,12 +59,10 @@ class SelectCallback implements SelectCallbackInterface
     public function __invoke(array $path)
     {
         $results = [];
-        $relation_to_mapper = $this->mapper->getRelationToMapper();
         foreach ($path as $node) {
             $relation_name = $node->relation_name;
-            $mapper_name = $relation_to_mapper[$relation_name]['mapper'];
-            $vals = $this->resolver->resolveCriteria($node->criteria, $results, $this->mapper);
-            $results[$relation_name] = $this->entity_repository->fetchCollection($mapper_name, $vals);
+            $vals = $this->resolver->resolveCriteria($node->criteria, $results, $this->builder);
+            $results[$relation_name] = $this->entity_repository->fetchCollection($relation_name, $vals);
         }
         return $results;
     }

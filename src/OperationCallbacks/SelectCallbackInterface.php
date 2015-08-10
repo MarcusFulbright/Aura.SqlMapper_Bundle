@@ -1,7 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\OperationCallbacks;
 
-use Aura\SqlMapper_Bundle\Aggregate\AggregateMapperInterface;
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
 use Aura\SqlMapper_Bundle\Entity\EntityRepository;
 use Aura\SqlMapper_Bundle\EntityMediation\OperationArranger;
 use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
@@ -16,7 +16,7 @@ use Aura\SqlMapper_Bundle\EntityMediation\PlaceholderResolver;
 interface SelectCallbackInterface
 {
     /**
-     * @param AggregateMapperInterface $mapper
+     * @param AggregateBuilderInterface $builder
      *
      * @param EntityRepository $entity_repository
      *
@@ -26,7 +26,7 @@ interface SelectCallbackInterface
      *
      */
     public function __construct(
-        AggregateMapperInterface $mapper,
+        AggregateBuilderInterface $builder,
         EntityRepository $entity_repository,
         OperationArranger $arranger,
         PlaceholderResolver $resolver

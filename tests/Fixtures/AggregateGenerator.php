@@ -1,6 +1,7 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Fixtures;
 
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderLocator;
 use Aura\SqlMapper_Bundle\Filter;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingAggregateFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\EmployeeFactory;
@@ -9,28 +10,28 @@ use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\TaskAggregateFactory;
 class AggregateGenerator
 {
     protected $employee = [
-        'root' => 'user',
+        'root' => 'user_entity',
         'aggregates' => [
             'building_aggregate',
             'task_aggregate'
         ],
         'entities' => [
-            'floor',
-            'user'
+            'floor_entity',
+            'user_entity'
         ],
         'relations' => [
             'user_to_floor',
-            'task_to_user',
-            'user_to_building'
+            'task_aggregate_to_user',
+            'user_to_building_aggregate'
         ]
     ];
 
     protected $building = [
-        'root' => 'building',
+        'root' => 'building_entity',
         'aggregates' => [],
         'entities' => [
-            'building',
-            'building_type'
+            'building_entity',
+            'building_type_entity'
         ],
         'relations' => [
             'building_to_type'
@@ -38,16 +39,28 @@ class AggregateGenerator
     ];
 
     protected $task = [
-        'root' => 'task',
+        'root' => 'task_entity',
         'aggregates' => [],
         'entities' => [
-            'task',
-            'task_type'
+            'task_entity',
+            'task_type_entity'
         ],
         'relations' => [
             'task_to_type'
         ]
     ];
+
+    public function getBuilderLocator(array $aggregates)
+    {
+        $builders = [];
+        foreach ($aggregates as $aggregate) {
+            $method = 'get'.ucfirst($aggregate).'Builder';
+            $builders[$aggregate] = function() use ($method) {
+                return $this->$method();
+            };
+        }
+        return new AggregateBuilderLocator($builders);
+    }
 
     public function getEmployeeBuilder()
     {
@@ -71,7 +84,7 @@ class AggregateGenerator
         $builder->setAggregates($this->building['aggregates']);
         $builder->setEntities($this->building['entities']);
         $builder->setRoot($this->building['root']);
-        $builder->setRoot($this->building['relations']);
+        $builder->setRelations($this->building['relations']);
         return $builder;
     }
 
