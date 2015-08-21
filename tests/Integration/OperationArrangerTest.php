@@ -2,23 +2,14 @@
 namespace Aura\SqlMapper_Bundle;
 
 use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderLocator;
-<<<<<<< HEAD
-use Aura\SqlMapper_Bundle\EntityMediation\EntityOperation;
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 use Aura\SqlMapper_Bundle\EntityMediation\EntityOperationFactory;
 use Aura\SqlMapper_Bundle\EntityMediation\OperationManager;
 use Aura\SqlMapper_Bundle\EntityMediation\PlaceHolderFactory;
 use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\AggregateGenerator;
-<<<<<<< HEAD
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingTypeFactory;
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
-use Aura\SqlMapper_Bundle\Tests\Fixtures\GatewayGenerator;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\RelationGenerator;
-use Aura\SqlMapper_Bundle\Tests\Fixtures\SqliteFixture;
 
 class OperationArrangerTest extends \PHPUnit_Framework_TestCase
 {
@@ -31,170 +22,129 @@ class OperationArrangerTest extends \PHPUnit_Framework_TestCase
     /** @var RelationLocator */
     protected $relation_locator;
 
-<<<<<<< HEAD
+    /** @var PlaceHolderFactory */
+    protected $placeholder_factory;
+
     /** @var EntityOperationFactory */
     protected $operation_factory;
 
-    /** @var BuildingFactory */
-    protected $building_factory;
-
-    /** @var BuildingTypeFactory */
-    protected $building_type_factory;
-
-    /** @var PlaceHolderFactory */
-    protected $place_holder_factory;
-
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     public function setUp()
     {
-        $aggregate_gen = new AggregateGenerator();
-        $gateway_gen   = new GatewayGenerator();
-        $relation_gen  = new RelationGenerator();
-        $aggregates = ['employee', 'building', 'task'];
-        $relations = [
-            'building_to_type',
-            'task_to_type',
+        $aggregate_generator = new AggregateGenerator();
+        $this->builder_locator = $aggregate_generator->getBuilderLocator(['employee', 'building']);
+        $relation_generator = new RelationGenerator();
+        $this->relation_locator = $relation_generator->getRelationLocator([
             'user_to_floor',
             'task_aggregate_to_user',
-            'user_to_building_aggregate'
-        ];
-
-        $this->builder_locator = $aggregate_gen->getBuilderLocator($aggregates);
-        $this->relation_locator = $relation_gen->getRelationLocator($relations);
-<<<<<<< HEAD
+            'user_to_building_aggregate',
+            'building_to_type'
+        ]);
+        $this->placeholder_factory = new PlaceHolderFactory();
         $this->operation_factory = new EntityOperationFactory();
         $this->manager = new OperationManager(
-            $this->operation_factory,
-=======
-        $this->manager = new OperationManager(
-            new EntityOperationFactory(),
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
-            new PlaceHolderFactory(),
-            $this->relation_locator
+            $this->placeholder_factory,
+            $this->relation_locator,
+            $this->operation_factory
         );
-
-        $fixtures = new SqliteFixture($gateway_gen->getConnection()->getWrite());
-        $fixtures->exec();
-<<<<<<< HEAD
-
-        $this->building_factory = new BuildingFactory();
-        $this->building_type_factory = new BuildingTypeFactory();
-        $this->place_holder_factory = new PlaceHolderFactory();
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     }
 
     public function testGetOrderForEmployee()
     {
         $expected = [
-<<<<<<< HEAD
-            0 => [
-                'user_to_floor' => [
-                    'entities' => [
-                        'inverse' => 'floor_entity'
-                    ],
-                    'relation' => $this->relation_locator->__get('user_to_floor')
-                ],
+            0 => (object)[
+                'relation_name' => 'user_to_floor',
+                'relation' => $this->relation_locator->__get('user_to_floor'),
+                'entities' => [
+                    'inverse' => 'floor_entity'
+                ]
             ],
-            1 => [
-                'user_to_building_aggregate' => [
-                    'entities' => [
-                        'inverse' => 'building_aggregate'
-                    ],
-                    'relation' => $this->relation_locator->__get('user_to_building_aggregate')
-                ],
+            1 => (object)[
+                'relation_name' => 'user_to_building_aggregate',
+                'relation' => $this->relation_locator->__get('user_to_building_aggregate'),
+                'entities' => [
+                    'inverse' => 'building_aggregate'
+                ]
             ],
-            2 => [
-                'task_aggregate_to_user' => [
+            2 => (object)[
+                'relation_name' => 'task_aggregate_to_user',
+                'relation' => $this->relation_locator->__get('task_aggregate_to_user'),
                 'entities' => [
                     'inverse' => 'user_entity',
                     'owning' => 'task_aggregate'
                 ],
-                'relation' => $this->relation_locator->__get('task_aggregate_to_user')
             ]
-=======
-            'floor_entity',
-            'building_aggregate',
-            'user_entity',
-            'task_aggregate'
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
         ];
         $actual = $this->manager->getOrder($this->builder_locator->__get('employee'));
         $this->assertEquals($expected, $actual);
     }
-<<<<<<< HEAD
-/*
-    public function testGetOrderForTask()
-    {
-        $expected = [
-            'task_to_type' => [
-                'entities' => [
-                    'inverse' => 'task_type_entity',
-                    'owning' => 'task_entity'
-                ],
-                'relation' => $this->relation_locator->__get('task_to_type')
-            ]
-=======
 
-    public function testGetOrderForTask()
+    public function testGetOrderForBuildingAggregate()
     {
         $expected = [
-            'task_type_entity',
-            'task_entity'
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
-        ];
-        $actual = $this->manager->getOrder($this->builder_locator->__get('task'));
-        $this->assertEquals($expected, $actual);
-    }
-<<<<<<< HEAD
-
-    public function testGorOrderForBuilding()
-    {
-        $expected = [
-            'building_to_type' => [
+            0 => (object)[
+                'relation_name' => 'building_to_type',
+                'relation' => $this->relation_locator->__get('building_to_type'),
                 'entities' => [
                     'inverse' => 'building_type_entity',
                     'owning' => 'building_entity'
-                ],
-                'relation' => $this->relation_locator->__get('building_to_type')
+                ]
             ]
         ];
         $actual = $this->manager->getOrder($this->builder_locator->__get('building'));
         $this->assertEquals($expected, $actual);
     }
 
-    public function testGetOperationsForBuilding()
+    public function testGetOperationListBuildingAggregate()
     {
-        $building = $this->building_factory->newObject(['id' => 1, 'name' => 'building 1', 'type' => 'P']);
-        $type = $this->building_type_factory->newObject(['id' => 2, 'code' => 'P', 'decode' => 'Profit']);
-        $place_holder = $this->place_holder_factory->getObjectPlaceHolder($type, 'code');
-        $pieces = [
-            [
-                'building_entity'      => [$building],
-                'building_type_entity' => [$type]
-            ]
-        ];
-        $order = [
-            'building_type_entity' => null,
-            'building_entity'      => $this->relation_locator->__get('building_to_type')
-        ];
+        $building_type_factory = new BuildingTypeFactory();
+        $type_entity = $building_type_factory->newObject([
+            'id' => null,
+            'code' => 'P',
+            'decode' => 'Profit'
+        ]);
+        $building_factory = new BuildingFactory();
+        $building_entity = $building_factory->newObject([
+            'id' => null,
+            'name' => 'NewBuildingName',
+            'type' => $type_entity->getCode()
+        ]);
         $expected = [
+            0 => $this->operation_factory->newOperation(
+                'building_type_entity',
+                $type_entity,
+                []
+            ),
+            1 => $this->operation_factory->newOperation(
+                'building_entity',
+                $building_entity,
+                ['type' => $this->placeholder_factory->newObjectPlaceHolder($type_entity, 'code')]
+            )
+        ];
+        $actual = $this->manager->getOperationList(
+            [
+                0 => (object)[
+                    'relation_name' => 'building_to_type',
+                    'relation' => $this->relation_locator->__get('building_to_type'),
+                    'entities' => [
+                        'inverse' => 'building_type_entity',
+                        'owning' => 'building_entity'
+                    ]
+                ]
+            ],
             [
                 'building_to_type' => [
-                    'building_type_entity' => [
-                        new EntityOperation('building_type_entity', $type),
-                    ],
-                    'building_entity' => [
-                        new EntityOperation('building_entity', $building, ['type' => $place_holder])
+                    0 => [
+                        'building_type_entity' => $type_entity,
+                        'building_entity' => $building_entity
                     ]
                 ]
             ]
-        ];
-        $actual = $this->manager->getOperationList($order, $pieces);
+        );
         $this->assertEquals($expected, $actual);
     }
-*/
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
+
+    public function testGetOperationListEmployee()
+    {
+
+    }
 }

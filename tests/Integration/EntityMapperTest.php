@@ -35,7 +35,6 @@ class EntityMapperTest extends \PHPUnit_Framework_TestCase
 
         $this->locator = $gateway_gen->setUpGatewayLocator(['user']);
         $this->mapper = $mapper_gen->getUser($this->locator);
-
     }
 
     public function testGetIdentityValue()

@@ -2,10 +2,6 @@
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
 use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
-<<<<<<< HEAD
-use Aura\SqlMapper_Bundle\Relations\Relation;
-=======
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
 use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 
 /**
@@ -19,126 +15,108 @@ use Aura\SqlMapper_Bundle\Relations\RelationLocator;
  */
 class OperationManager
 {
-    /** @var EntityOperationFactory */
-    protected $operation_factory;
-
     /** @var RelationLocator */
     protected $locator;
 
     /** @var PlaceHolderFactory  */
     protected $placeholder_factory;
 
+    /** @var  EntityOperationFactory */
+    protected $operation_factory;
+
     /**
      *
      * Constructor.
-     *
-     * @param EntityOperationFactory $factory
      *
      * @param PlaceHolderFactory $placeHolder_factory
      *
      * @param RelationLocator $locator
      *
+     * @param EntityOperationFactory $operation_factory
+     *
      */
     public function __construct(
-        EntityOperationFactory $factory,
         PlaceHolderFactory $placeHolder_factory,
-        RelationLocator $locator
+        RelationLocator $locator,
+        EntityOperationFactory $operation_factory
     ) {
-<<<<<<< HEAD
-        $this->operation_factory = $factory;
-=======
-        $this->factory = $factory;
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
         $this->locator = $locator;
         $this->placeholder_factory = $placeHolder_factory;
+        $this->operation_factory = $operation_factory;
     }
 
     public function getOrder(AggregateBuilderInterface $builder)
     {
-<<<<<<< HEAD
-        //set both inverse and owning side
-        //if inverse side has been previously inserted as owning side, remove it from that relation's entities list and put it at the end of the array
         $order = [];
-        $inserted = [];
         foreach ($builder->getRelations() as $relation_name) {
             $relation = $this->locator->__get($relation_name);
             $inverse = $relation->getInverseEntity();
             $owning = $relation->getOwningEntity();
-            if (array_key_exists($inverse, $inserted)) {
-
-            }
-
-
-
-
-
-
-            $order[] = [
-                $relation_name => [
-                    'entities' => [$entities],
-                    'relation' => $relation
+            $item = (object) [
+                'relation_name' => $relation_name,
+                'relation' => $relation,
+                'entities' => [
+                    'inverse' => $inverse,
+                    'owning' => $owning
                 ]
             ];
-            $inserted[$owning] = $relation_name;
+            $order = $this->arrangeOrder($item, $order);
         }
         return $order;
     }
 
-    public function getOperationList(array $order, array $pieces)
+    protected function arrangeOrder(\stdClass $item, array $order)
+    {
+        $entities = $item->entities;
+        $altered = false;
+        foreach ($order as $index => $ordered_item) {
+            $has_owning = array_key_exists('owning', $ordered_item->entities);
+            if ($has_owning && $ordered_item->entities['owning'] === $entities['inverse']) {
+                unset($ordered_item->entities['owning']);
+                $order[$index] = $ordered_item;
+                $order[] = $item;
+                $altered = true;
+            } elseif ($has_owning && $ordered_item->entities['inverse'] === $entities['owning']) {
+                unset($item->entities['owning']);
+                $order[$index] = $item;
+                $order[] = $ordered_item;
+                $altered = true;
+            }
+        }
+        if ($altered === false) {
+            $order[] = $item;
+        }
+        return $order;
+    }
+
+    public function getOperationList(array $order, array $extracted_entities)
+    {
+        $list = [];
+        foreach ($order as $item) {
+            $operations = $this->handleEntities($item, $extracted_entities[$item->relation_name]);
+            $list = array_merge($list, $operations);
+        }
+        return $list;
+    }
+
+    protected function handleEntities(\stdClass $order_item, array $instances)
     {
         $operations = [];
-        foreach ($order as $order_entity => $order_relation) {
-            foreach ($pieces as $entities) {
-                foreach ($entities as $piece_entity => $instance) {
-                    if ($piece_entity === $order_entity) {
-                        $criteria = $this->getCriteria($entities, $order_relation, $order_entity);
-                        $operation = $this->operation_factory->newOperation($order_entity, $instance, $criteria);
-                        $operations[$order_entity][] = $operation;
-                    }
-                }
+        $inverse = $order_item->entities['inverse'];
+        $owning = isset($order_item->entities['owning']) ? $order_item->entities['owning'] : null;
+        $relation  = $order_item->relation;
+        $own_field = $relation->getOwningField();
+        $inv_field = $relation->getInverseField();
+        foreach ($instances as $entity) {
+            $operations[] = $this->operation_factory->newOperation($inverse, $entity[$inverse], []);
+            if ($owning) {
+                $operations[] = $this->operation_factory->newOperation(
+                    $owning,
+                    $entity[$owning],
+                    [$own_field => $this->placeholder_factory->newObjectPlaceHolder($entity[$inverse], $inv_field)]
+                );
             }
         }
         return $operations;
-    }
-
-    public function getCriteria(array $entities, Relation $relation = null, $from)
-    {
-        if ($relation === null) {
-            return [];
-        }
-        $inverse = $relation->getInverseEntity();
-        $owner = $relation->getOwningEntity();
-        if ($from === $inverse) {
-            $func = $this->placeholder_factory->getObjectPlaceHolder($entities[$owner], $relation->getOwningField());
-            $criteria = [$relation->getInverseField() => $func];
-        } else {
-            $func = $this->placeholder_factory->getObjectPlaceHolder($entities[$inverse], $relation->getInverseField());
-            $criteria = [$relation->getOwningField() => $func];
-        }
-        return $criteria;
-=======
-        $order = [];
-        $owning_sides = [];
-        foreach ($builder->getRelations() as $relation_name) {
-            $relation = $this->locator->__get($relation_name);
-            $inverse_entity = $relation->getInverseEntity();
-            $owning_entity = $relation->getOwningEntity();
-            $has_owning = array_search($owning_entity, $order);
-            if ($has_owning == true) {
-                $piece = array_splice($order, $has_owning, count($order));
-                array_unshift($piece, $inverse_entity);
-                $order = array_merge($order, $piece);
-            } else {
-                $owning_sides[] = $owning_entity;
-                $order[] = $inverse_entity;
-            }
-        }
-        foreach ($owning_sides as $owning_side) {
-            if (array_search($owning_side, $order) === false) {
-                $order[] = $owning_side;
-            }
-        }
-        return $order;
->>>>>>> 5fa0775e710b72959ceb4ecd770cbca2d0945f8e
     }
 }
