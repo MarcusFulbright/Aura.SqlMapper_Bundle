@@ -14,7 +14,7 @@ abstract class AbstractAggregateBuilder implements AggregateBuilderInterface
 
     /** {@inheritdoc} */
     public function __construct(
-        ObjectFactoryInterface $factory,
+        $factory,
         Filter $filter
     ) {
         $this->factory = $factory;

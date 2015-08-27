@@ -16,7 +16,7 @@ interface AggregateBuilderInterface
      * @param Filter $filter
      *
      */
-    public function __construct(ObjectFactoryInterface $aggregate_factory, Filter $filter);
+    public function __construct($aggregate_factory, Filter $filter);
 
     /**
      *
