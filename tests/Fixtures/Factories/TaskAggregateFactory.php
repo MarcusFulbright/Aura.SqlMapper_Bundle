@@ -1,20 +1,22 @@
 <?php
 namespace Aura\SqlMapper_Bundle\Tests\Fixtures\Factories;
 
-use Aura\SqlMapper_Bundle\ObjectFactoryInterface;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Aggregates\TaskAggregate;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Entities\Task;
+use Aura\SqlMapper_Bundle\Tests\Fixtures\Entities\TaskType;
 
-class TaskAggregateFactory implements ObjectFactoryInterface
+class TaskAggregateFactory
 {
-    public function newObject(array $row)
+    public function newObject(Task $task, TaskType $task_type)
     {
-        die('trying to build a new employee');
+        return new TaskAggregate($task,$task_type);
     }
 
     public function newCollection(array $rows)
     {
         $collection = [];
         foreach ($rows as $row) {
-            $collection[] = $this->newObject($row);
+            $collection[] = $this->newObject($row['task'], $row['type']);
         }
         return $collection;
     }

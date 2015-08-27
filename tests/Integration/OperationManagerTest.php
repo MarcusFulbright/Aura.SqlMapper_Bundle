@@ -11,7 +11,7 @@ use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\Factories\BuildingTypeFactory;
 use Aura\SqlMapper_Bundle\Tests\Fixtures\RelationGenerator;
 
-class OperationArrangerTest extends \PHPUnit_Framework_TestCase
+class OperationManagerTest extends \PHPUnit_Framework_TestCase
 {
     /** @var  OperationManager */
     protected $manager;
