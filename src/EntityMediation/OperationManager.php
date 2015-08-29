@@ -2,6 +2,7 @@
 namespace Aura\SqlMapper_Bundle\EntityMediation;
 
 use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderInterface;
+use Aura\SqlMapper_Bundle\Aggregate\AggregateBuilderLocator;
 use Aura\SqlMapper_Bundle\Relations\RelationLocator;
 
 /**
@@ -17,6 +18,9 @@ class OperationManager
 {
     /** @var RelationLocator */
     protected $locator;
+
+    /** @var AggregateBuilderLocator */
+    protected $aggregate_locator;
 
     /** @var PlaceHolderFactory  */
     protected $placeholder_factory;
@@ -34,15 +38,19 @@ class OperationManager
      *
      * @param EntityOperationFactory $operation_factory
      *
+     * @param AggregateBuilderLocator $aggregate_locator
+     *
      */
     public function __construct(
         PlaceHolderFactory $placeHolder_factory,
         RelationLocator $locator,
-        EntityOperationFactory $operation_factory
+        EntityOperationFactory $operation_factory,
+        AggregateBuilderLocator $aggregate_locator
     ) {
         $this->locator = $locator;
         $this->placeholder_factory = $placeHolder_factory;
         $this->operation_factory = $operation_factory;
+        $this->aggregate_locator = $aggregate_locator;
     }
 
     public function getOrder(AggregateBuilderInterface $builder)
@@ -60,33 +68,82 @@ class OperationManager
                     'owning' => $owning
                 ]
             ];
-            $order = $this->arrangeOrder($item, $order);
+            $order = $this->arrangeOrder($item, $order, $builder);
         }
         return $order;
     }
 
-    protected function arrangeOrder(\stdClass $item, array $order)
+    protected function arrangeOrder(\stdClass $item, array $order, AggregateBuilderInterface $builder)
     {
         $entities = $item->entities;
-        $altered = false;
-        foreach ($order as $index => $ordered_item) {
-            $has_owning = array_key_exists('owning', $ordered_item->entities);
-            if ($has_owning && $ordered_item->entities['owning'] === $entities['inverse']) {
-                unset($ordered_item->entities['owning']);
-                $order[$index] = $ordered_item;
-                $order[] = $item;
-                $altered = true;
-            } elseif ($has_owning && $ordered_item->entities['inverse'] === $entities['owning']) {
-                unset($item->entities['owning']);
-                $order[$index] = $item;
-                $order[] = $ordered_item;
-                $altered = true;
-            }
+        $aggregates = $builder->getAggregates();
+        $owning_aggregate = array_key_exists('owning', $entities) && in_array($entities['owning'], $aggregates);
+        $inverse_aggregate = in_array($item->entities['inverse'], $aggregates);
+
+        if ($owning_aggregate) {
+            $next = $entities['owning'];
+            unset($item->entities['owning']);
+            $operations = array_merge([$item], $this->getOrder($this->aggregate_locator->__get($next)));
+        } elseif ($inverse_aggregate) {
+            $next = $entities['inverse'];
+            unset($item->entities['inverse']);
+            $operations = array_merge([$item], $this->getOrder($this->aggregate_locator->__get($next)));
+        } else {
+            $operations = [$item];
         }
-        if ($altered === false) {
-            $order[] = $item;
+
+        return $this->addOperations($order, $operations);
+    }
+
+    protected function addOperations(array $order, array $operations)
+    {
+        switch(true) {
+            case count($order) === 0:
+                $order = $operations;
+                break;
+            case ! array_key_exists('inverse', $operations[0]->entities) && $contains_owning = $this->containsAsInverse($order, $operations[0], 'owning'):
+                unset($operations[0]);
+                $order = array_merge(
+                    array_slice($order, 0, key($contains_owning)),
+                    $operations,
+                    array_slice($order, key($contains_owning))
+                );
+                break;
+            case $contains_inverse = $this->containsAsOwning($order, $operations[0], 'inverse'):
+                $order = array_merge(
+                    array_slice($order, 0, key($contains_inverse) + 1),
+                    $operations,
+                    array_slice($order, key($contains_inverse) + 2)
+                );
+                break;
+            default:
+                $order = array_merge($order, $operations);
         }
         return $order;
+    }
+
+    protected function containsAsInverse(array $order, \stdClass $operation, $position)
+    {
+        $check = $operation->entities[$position];
+        foreach ($order as $key => $order_item) {
+            if (array_key_exists('inverse', $order_item->entities) && $order_item->entities['inverse'] === $check) {
+                unset($order_item->entities['owning']);
+                return [$key => $order_item];
+            }
+        }
+        return false;
+    }
+
+    protected function containsAsOwning(array $order, \stdClass $operation, $position)
+    {
+        $check = $operation->entities[$position];
+        foreach ($order as $key => $order_item) {
+            if (array_key_exists('owning', $order_item->entities) && $order_item->entities['owning'] === $check) {
+                unset($order_item->entities['owning']);
+                return [$key => $order_item];
+            }
+        }
+        return false;
     }
 
     public function getOperationList(array $order, array $extracted_entities)
@@ -113,6 +170,7 @@ class OperationManager
                 $operations[] = $this->operation_factory->newOperation(
                     $owning,
                     $entity[$owning],
+                    //place holder logic needs to get smarter and not just look at current relation. 
                     [$own_field => $this->placeholder_factory->newObjectPlaceHolder($entity[$inverse], $inv_field)]
                 );
             }

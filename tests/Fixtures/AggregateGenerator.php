@@ -55,7 +55,8 @@ class AggregateGenerator
         $builders = [];
         foreach ($aggregates as $aggregate) {
             $method = 'get'.ucfirst($aggregate).'Builder';
-            $builders[$aggregate] = function() use ($method) {
+            $key = $aggregate.'_aggregate';
+            $builders[$key] = function() use ($method) {
                 return $this->$method();
             };
         }

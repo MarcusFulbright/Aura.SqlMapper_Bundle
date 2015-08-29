@@ -35,7 +35,7 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
     /** @var EntityOperationFactory */
     protected $operation_factory;
 
-    protected function getEmployeeOrder ()
+    protected function getEmployeeOrder()
     {
         return [
             0 => (object)[
@@ -46,10 +46,11 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
                 ]
             ],
             1 => (object)[
-                'relation_name' => 'user_to_building_aggregate',
-                'relation'      => $this->relation_locator->__get('user_to_building_aggregate'),
+                'relation_name' => 'building_to_type',
+                'relation'      => $this->relation_locator->__get('building_to_type'),
                 'entities'      => [
-                    'inverse' => 'building_aggregate'
+                    'inverse' => 'building_type_entity',
+                    'owning'  => 'building_entity'
                 ]
             ],
             2 => (object)[
@@ -57,8 +58,15 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
                 'relation'      => $this->relation_locator->__get('task_aggregate_to_user'),
                 'entities'      => [
                     'inverse' => 'user_entity',
-                    'owning'  => 'task_aggregate'
                 ],
+            ],
+            3 => (object)[
+                'relation_name' => 'task_to_type',
+                'relation'      => $this->relation_locator->__get('task_to_type'),
+                'entities'      => [
+                    'inverse' => 'task_type_entity',
+                    'owning'  => 'task_entity'
+                ]
             ]
         ];
     }
@@ -77,38 +85,40 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    public function setUp ()
+    public function setUp()
     {
         $aggregate_generator = new AggregateGenerator();
-        $this->builder_locator = $aggregate_generator->getBuilderLocator(['employee', 'building']);
+        $this->builder_locator = $aggregate_generator->getBuilderLocator(['employee', 'building', 'task']);
         $relation_generator = new RelationGenerator();
         $this->relation_locator = $relation_generator->getRelationLocator(
             [
                 'user_to_floor',
                 'task_aggregate_to_user',
                 'user_to_building_aggregate',
-                'building_to_type'
+                'building_to_type',
+                'task_to_type'
             ]);
         $this->placeholder_factory = new PlaceHolderFactory();
         $this->operation_factory = new EntityOperationFactory();
         $this->manager = new OperationManager(
             $this->placeholder_factory,
             $this->relation_locator,
-            $this->operation_factory
+            $this->operation_factory,
+            $this->builder_locator
         );
     }
-
+/*
     public function testGetOrderForEmployee()
     {
         $expected = $this->getEmployeeOrder();
-        $actual = $this->manager->getOrder($this->builder_locator->__get('employee'));
+        $actual = $this->manager->getOrder($this->builder_locator->__get('employee_aggregate'));
         $this->assertEquals($expected, $actual);
     }
 
     public function testGetOrderForBuildingAggregate()
     {
         $expected = $this->getBuildingAggregateOrder();
-        $actual = $this->manager->getOrder ($this->builder_locator->__get ('building'));
+        $actual = $this->manager->getOrder ($this->builder_locator->__get ('building_aggregate'));
         $this->assertEquals ($expected, $actual);
     }
 
@@ -153,7 +163,7 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
         );
         $this->assertEquals ($expected, $actual);
     }
-
+*/
     public function testGetOperationListEmployee()
     {
         $building_factory = new BuildingFactory();
@@ -171,9 +181,6 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
                 'code'   => 'P',
                 'decode' => 'Profit'
             ]);
-        $building_aggregate_factory = new BuildingAggregateFactory();
-        $building_aggregate = $building_aggregate_factory->newObject($building, $building_type);
-
         $task_factory = new TaskFactory();
         $task = $task_factory->newObject(
             [
@@ -189,9 +196,6 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
                 'code'   => 'B',
                 'decode' => 'Budget'
             ]);
-        $task_aggregate_factory = new TaskAggregateFactory();
-        $task_aggregate = $task_aggregate_factory->newObject($task, $task_type);
-
         $floor_factory = new FloorFactory();
         $floor = $floor_factory->newObject(
             [
@@ -216,36 +220,57 @@ class OperationManagerTest extends \PHPUnit_Framework_TestCase
                         'floor_entity' => $floor
                     ]
                 ],
-                'user_to_building_aggregate' => [
+                'building_to_type' => [
                     0 => [
-                        'building_aggregate' => $building_aggregate,
-                        'user_entity'        => $user
+                        'building_entity' => $building,
+                        'building_type_entity'=> $building_type
                     ]
                 ],
                 'task_aggregate_to_user' => [
                     0 => [
-                        'user_entity'    => $user,
-                        'task_aggregate' => [
-                            $task_aggregate
-                        ]
+                        'user_entity' => $user
+                    ]
+                ],
+                'task_to_type' => [
+                    0 => [
+                        'task_entity' => [$task],
+                        'task_type_entity'   => [$task_type]
                     ]
                 ]
             ]
         );
         $expected = [
-            0 => $this->operation_factory->newOperation (
+            0 => $this->operation_factory->newOperation(
                 'floor_entity', $floor, []
             ),
-            1 => $this->operation_factory->newOperation (
-                'building_aggregate', $building_aggregate, []
+            1 => $this->operation_factory->newOperation(
+                'building_type_entity', $building_type, []
             ),
-            2 => $this->operation_factory->newOperation (
-                'user_entity', $user, []
+            2 => $this->operation_factory->newOperation(
+                'building_entity',
+                $building,
+                ['type' => $this->placeholder_factory->newObjectPlaceHolder('code', $building_type)]
             ),
-            3 => $this->operation_factory->newOperation (
-                'task_aggregate',
-                [$task_aggregate],
-                ['userid' => $this->placeholder_factory->newObjectPlaceHolder ('id', $user)]
+            3 => $this->operation_factory->newOperation(
+                'user_entity',
+                $user,
+                [
+                    'floor'    => $this->placeholder_factory->newObjectPlaceHolder('id', $floor),
+                    'building' => $this->placeholder_factory->newObjectPlaceHolder('id', $building)
+                ]
+            ),
+            4 => $this->operation_factory->newOperation(
+                'task_type_entity', [$task_type],[]
+            ),
+            5 => $this->operation_factory->newOperation(
+                'task_entity',
+                [$task],
+                [
+                    0 => [
+                        'userid' => $this->placeholder_factory->newObjectPlaceHolder('id', $user),
+                        'type'   => $this->placeholder_factory->newObjectPlaceHolder('code', $task_type)
+                    ]
+                ]
             )
         ];
         $this->assertEquals($expected, $actual);
